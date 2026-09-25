@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday, Kishore</title>
+    <meta name="description" content="An interactive birthday card for Kishore Damam. Tune the carrier, probe the board, decode the packet, kill the power.">
+    <meta name="theme-color" content="#0B0F17">
+
+    <!-- React 18 + Babel (in-browser JSX) -->
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#0B0F17',
+                        panel:    '#111724',
+                        raised:   '#161D2B',
+                        edge:     '#232C3D',
+                        ink:      '#E6EAF0',
+                        muted:    '#8391A7',
+                        dim:      '#56627A',
+                        copper:   '#D4AF37',
+                        amber:    '#F59E0B',
+                        neon:     '#00F2FE',
+                        laser:    '#FF007F',
+                        phosphor: '#10B981',
+                    },
+                    fontFamily: {
+                        sans:  ['Geist', 'system-ui', 'sans-serif'],
+                        mono:  ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+                    },
+                },
+            },
+        };
+    </script>
+
+    <style>
+        :root { --pulse-dur: 2.8s; }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            margin: 0;
+            background: #0B0F17;
+            color: #E6EAF0;
+            font-family: Geist, system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        ::selection { background: rgba(0,242,254,.25); }
+
+        /* PCB silkscreen: solder-pad dots + millimetre grid */
+        .bg-board {
+            background-image:
+                radial-gradient(rgba(212,175,55,.085) 1px, transparent 1.3px),
+                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+            background-size: 20px 20px, 100px 100px, 100px 100px;
+        }
+        .bg-glow {
+            background:
+                radial-gradient(60% 40% at 50% 0%, rgba(0,242,254,.07), transparent 70%),
+                radial-gradient(50% 50% at 50% 120%, rgba(212,175,55,.05), transparent 70%);
+        }
+
+        /* Oscilloscope graticule: 10 x 8 divisions + centre ticks */
+        .graticule {
+            background-image:
+                linear-gradient(rgba(0,242,254,.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,242,254,.07) 1px, transparent 1px);
+            background-size: 10% 12.5%;
+            background-position: -1px -1px;
+        }
+        .graticule::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background:
+                linear-gradient(rgba(0,242,254,.16), rgba(0,242,254,.16)) center / 100% 1px no-repeat,
+                linear-gradient(90deg, rgba(0,242,254,.16), rgba(0,242,254,.16)) center / 1px 100% no-repeat;
+        }
+
+        /* Trace current pulses */
+        .trace-pulse {
+            fill: none; stroke-linecap: round;
+            stroke-dasharray: 14 420;
+            animation: flow var(--pulse-dur) linear infinite;
+        }
+        @keyframes flow { from { stroke-dashoffset: 434; } to { stroke-dashoffset: 0; } }
+
+        /* Party-mode RGB LEDs */
+        .party-led { animation: ledcycle 1.6s linear infinite; }
+        @keyframes ledcycle {
+            0%, 100% { fill: #FF007F; } 25% { fill: #F59E0B; } 50% { fill: #10B981; } 75% { fill: #00F2FE; }
+        }
+
+        /* LED candle flicker */
+        .flicker { animation: flicker 1.7s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+        @keyframes flicker {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            35% { opacity: .78; transform: scale(.94); }
+            60% { opacity: .95; transform: scale(1.04); }
+        }
+        .twinkle { animation: twinkle 2.4s ease-in-out infinite; }
+        @keyframes twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+
+        /* Power-down overlay */
+        .brownout { animation: brownout .9s steps(1, end) forwards; }
+        @keyframes brownout {
+            0% { opacity: 0; } 12% { opacity: .65; } 18% { opacity: .15; } 30% { opacity: .8; }
+            38% { opacity: .45; } 55% { opacity: .92; } 100% { opacity: .92; }
+        }
+
+        /* Celebration */
+        .ring { animation: ring 2.4s cubic-bezier(.2,.7,.2,1) infinite; }
+        @keyframes ring { from { transform: scale(.15); opacity: .9; } to { transform: scale(2.4); opacity: 0; } }
+        .sweep { animation: sweep 1.3s cubic-bezier(.6,0,.2,1) forwards; }
+        @keyframes sweep { from { transform: translateX(-110%); } to { transform: translateX(110%); } }
+        .chase { animation: chase 1.2s ease-in-out infinite; }
+        @keyframes chase { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+
+        /* Greeting reveal: scans in left to right like a trace */
+        .reveal-scan { clip-path: inset(0 100% 0 0); transition: clip-path 1.3s cubic-bezier(.7,0,.2,1) .15s; }
+        .reveal-scan.on { clip-path: inset(0 0 0 0); }
+
+        /* Terminal caret */
+        .caret::after {
+            content: ''; display: inline-block; width: .55em; height: 1.05em;
+            background: #00F2FE; vertical-align: -.18em; margin-left: 2px;
+            animation: blink 1s steps(1) infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Probe-able PCB parts */
+        .part { cursor: pointer; outline: none; }
+        .part .hl { opacity: 0; transition: opacity .2s; }
+        .part:hover .hl, .part:focus-visible .hl, .part.sel .hl { opacity: 1; }
+
+        :focus-visible { outline: 2px solid #00F2FE; outline-offset: 3px; }
+        button:focus-visible, [role=switch]:focus-visible, [role=slider]:focus-visible { border-radius: 8px; }
+
+        /* Sparky the mascot */
+        .bob { animation: bob 2.6s ease-in-out infinite; }
+        @keyframes bob { 50% { transform: translateY(-3px); } }
+        .eyeblink { animation: eyeblink 4.2s infinite; transform-box: fill-box; transform-origin: center; }
+        @keyframes eyeblink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+        .look { animation: look 3.2s ease-in-out infinite; }
+        @keyframes look { 0%, 100% { transform: translateX(-1.6px); } 50% { transform: translateX(1.6px); } }
+        .float-heart { animation: floatHeart 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+        @keyframes floatHeart { 0% { transform: translateY(4px) scale(.5); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-18px) scale(1); opacity: 0; } }
+        .antenna { animation: twinkle 1.6s ease-in-out infinite; }
+
+        /* Gift intro */
+        .gift-stage { --w: clamp(220px, 58vw, 330px); }
+        .gift-paper {
+            background-color: #141b29;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84'><g fill='none' stroke='%23D4AF37' stroke-opacity='.32' stroke-width='1.6' stroke-linejoin='round'><path d='M0 22 H30 L40 32 H84'/><path d='M22 0 V14 L30 22'/><path d='M62 84 V58 L52 48 H38'/><path d='M84 70 H70 L62 62'/></g><g fill='%23D4AF37' fill-opacity='.55'><circle cx='30' cy='22' r='2.6'/><circle cx='38' cy='48' r='2.6'/><circle cx='62' cy='62' r='2.6'/></g></svg>");
+            background-size: 84px 84px;
+        }
+        .ribbon { background: linear-gradient(90deg, #b3004f, #FF3D8E 45%, #ff8cbc 52%, #FF3D8E 60%, #b3004f); box-shadow: 0 0 18px rgba(255,0,127,.35); }
+        .ribbon-h { background: linear-gradient(180deg, #b3004f, #FF3D8E 45%, #ff8cbc 52%, #FF3D8E 60%, #b3004f); box-shadow: 0 0 18px rgba(255,0,127,.35); }
+        .rays {
+            background: repeating-conic-gradient(from 0deg, rgba(255,210,122,.16) 0deg 7deg, transparent 7deg 22deg);
+            -webkit-mask-image: radial-gradient(circle, #000 20%, transparent 68%);
+                    mask-image: radial-gradient(circle, #000 20%, transparent 68%);
+            animation: spin 26s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .gift-float { animation: giftFloat 3.2s ease-in-out infinite; }
+        @keyframes giftFloat { 50% { transform: translateY(-8px); } }
+        .cue { animation: cue 1.8s ease-in-out infinite; }
+        @keyframes cue { 50% { transform: translateY(6px); opacity: .6; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .rays, .gift-float, .cue { animation: none !important; }
+            .bob, .eyeblink, .look, .float-heart, .antenna { animation: none !important; }
+            .trace-pulse, .party-led, .flicker, .twinkle, .ring, .chase, .sweep, .caret::after { animation: none !important; }
+            .reveal-scan { transition: none; }
+            .brownout { animation: none; opacity: .92; }
+        }
+    </style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+/* ============================================================
+   CONFIGURATION: edit these values
+   ============================================================ */
+const CFG = {
+    name:      "Kishore Damam",   /* EDIT: full name                      */
+    nick:      "Kishore",         /* EDIT: first name / what friends call him */
+    age:       29,                /* EDIT: age he's turning (10–99 for the resistor bands) */
+    birthYear: 1997,              /* EDIT: birth year                     */
+    from:      "Aishu",           /* EDIT: who it's from                  */
+    /* EDIT: the personal message decoded in the terminal */
+    message: `Kishore,
+
+Thank you so much for everything.
+
+The support you gave me, the motivation you gave me when I was completely low, the gifts you gave me that I never thought I would have in my life, and all the moments...
+
+I will never forget your part in my life. Though it was paused for a few years, you came back into my life with a good purpose, and it made my life better.
+
+I will never meet a person like you in my life, and you will always remain my one and only best friend for a lifetime, the one who never gave up on me, even when I gave up on myself.
+
+There are so many things to say, but you are one of the best things that has happened in my life.
+
+I wish you a very good future and many more happy returns of the day.
+
+Hope you like this idea of a birthday card.`,
+    /* EDIT: one reason per LED. The LEDs spell his age, and "29" happens to use exactly 29 dots. */
+    reasons: [
+        "You believed in me when I didn't believe in myself.",
+        "You never gave up on me, not even once.",
+        "You showed up when I was at my lowest.",
+        "Your motivation got me through days I thought I couldn't.",
+        "You gave me gifts I never imagined I'd have.",
+        "You came back into my life, and it got better.",
+        "You make ordinary days feel like good memories.",
+        "You listen. Really listen.",
+        "You're honest with me, even when it's hard to hear.",
+        "You make me laugh when I need it most.",
+        "You're patient with people, including me.",
+        "You make the people around you better.",
+        "You're kind without needing anyone to notice.",
+        "You keep your promises.",
+        "You're brilliant, and you never make anyone feel small for it.",
+        "You fix things. Circuits and bad days alike.",
+        "You celebrate other people's wins like your own.",
+        "You stay calm when everything else isn't.",
+        "You remember the little things.",
+        "You're the same person whether anyone's watching or not.",
+        "Talking to you always makes things clearer.",
+        "You're fun to be around, even when we're doing nothing.",
+        "You care so much about the people you love.",
+        "You work hard and never make a fuss about it.",
+        "You make me want to be a better person.",
+        "Every memory with you is one I'd keep.",
+        "You're one of the best things that ever happened to me.",
+        "You're my one and only best friend.",
+        "And simply because you're you. Happy birthday, Kishore.",
+    ],
+};
+
+const { useState, useEffect, useRef, useCallback } = React;
+
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TARGET  = +(CFG.age / 10).toFixed(2);            // resonant carrier, MHz
+const BEATS   = 3;                                     // heartbeats across the scope once locked
+const sleep   = ms => new Promise(r => setTimeout(r, ms));
+const BITS    = [...CFG.nick.toUpperCase()].flatMap(ch =>
+    ch.charCodeAt(0).toString(2).padStart(8, '0').split('').map(Number));
+
+/* Resistor colour code for the age */
+const BAND = [
+    ['black', '#141414'], ['brown', '#7c4a1e'], ['red', '#dc2626'], ['orange', '#ea7a1a'], ['yellow', '#facc15'],
+    ['green', '#16a34a'], ['blue', '#2563eb'], ['violet', '#7c3aed'], ['grey', '#6b7280'], ['white', '#f4f4f5'],
+];
+const AGE_BANDS = [Math.floor(CFG.age / 10) % 10, CFG.age % 10, 0].map(d => BAND[d]);
+
+/* Heart outline; (x, y) is the top-centre, s the height */
+const heartPath = (ctx, x, y, s) => {
+    ctx.beginPath();
+    ctx.moveTo(x, y + s * .3);
+    ctx.bezierCurveTo(x, y, x - s * .5, y, x - s * .5, y + s * .3);
+    ctx.bezierCurveTo(x - s * .5, y + s * .6, x, y + s * .8, x, y + s);
+    ctx.bezierCurveTo(x, y + s * .8, x + s * .5, y + s * .6, x + s * .5, y + s * .3);
+    ctx.bezierCurveTo(x + s * .5, y, x, y, x, y + s * .3);
+    ctx.closePath();
+};
+
+/* Heartbeat (ECG) shape for one beat, s in [0, 1) */
+const ecg = s => {
+    const g = (c, w, a) => a * Math.exp(-((s - c) ** 2) / (2 * w * w));
+    return g(.15, .025, .12) - g(.31, .008, .15) + g(.34, .012, 1) - g(.375, .01, .28) + g(.6, .045, .22);
+};
+
+/* Fire a confetti burst from anywhere */
+const burst = detail => window.dispatchEvent(new CustomEvent('pcb-burst', { detail }));
+
+/* ═════════════════════════════════════════════
+   Confetti: microchips, resistors, LEDs, solder sparks
+   ═════════════════════════════════════════════ */
+const Confetti = () => {
+    const ref = useRef(null);
+    useEffect(() => {
+        const c = ref.current, ctx = c.getContext('2d');
+        let parts = [], raf = 0, dpr = 1;
+        const COLS = ['#00F2FE', '#FF007F', '#10B981', '#D4AF37', '#F59E0B'];
+        const size = () => {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+        };
+        size(); addEventListener('resize', size);
+
+        const draw = p => {
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, p.life / 40);
+            if (p.kind === 'spark') {
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.strokeStyle = p.col; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3); ctx.stroke();
+                ctx.restore(); return;
+            }
+            ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+            if (p.kind === 'chip') {
+                ctx.fillStyle = '#D4AF37';
+                for (let i = -1; i <= 1; i++) { ctx.fillRect(-9, i * 3 - .6, 2, 1.2); ctx.fillRect(7, i * 3 - .6, 2, 1.2); }
+                ctx.fillStyle = '#1b2231'; ctx.fillRect(-7, -5.5, 14, 11);
+                ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(-4, -2.5, 1.1, 0, 7); ctx.fill();
+            } else if (p.kind === 'res') {
+                ctx.strokeStyle = '#9aa3ad'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(13, 0); ctx.stroke();
+                ctx.fillStyle = '#d9c7a0'; ctx.fillRect(-7, -3, 14, 6);
+                p.bands.forEach((b, i) => { ctx.fillStyle = b; ctx.fillRect(-5 + i * 3.4, -3, 1.6, 6); });
+            } else if (p.kind === 'heart') {
+                ctx.fillStyle = p.col; heartPath(ctx, 0, -5, 11); ctx.fill();
+            } else {
+                ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(0, 0, 3.2, 0, 7); ctx.fill();
+                ctx.globalAlpha *= .3; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, 7); ctx.fill();
+            }
+            ctx.restore();
+        };
+
+        const tick = () => {
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+            parts = parts.filter(p => p.life > 0 && p.y < innerHeight + 40);
+            for (const p of parts) {
+                p.vy += p.g; p.vx *= p.drag; p.vy *= p.drag;
+                p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life--;
+                draw(p);
+            }
+            raf = parts.length ? requestAnimationFrame(tick) : 0;
+        };
+
+        const onBurst = e => {
+            const { x = innerWidth / 2, y = innerHeight / 3, n = 90, kind } = e.detail || {};
+            const count = REDUCED ? Math.ceil(n / 4) : n;
+            for (let i = 0; i < count; i++) {
+                const k = kind || ['chip', 'heart', 'res', 'spark', 'led', 'heart', 'spark'][i % 7];
+                const a = Math.random() * Math.PI * 2, s = (k === 'spark' ? 5 : 3) + Math.random() * (k === 'spark' ? 7 : 6);
+                parts.push({
+                    kind: k, x, y,
+                    vx: Math.cos(a) * s, vy: Math.sin(a) * s - (k === 'spark' ? 1 : 4),
+                    g: k === 'spark' ? .12 : .16, drag: k === 'spark' ? .95 : .985,
+                    rot: Math.random() * 6, vr: (Math.random() - .5) * .25,
+                    life: k === 'spark' ? 40 + Math.random() * 30 : 120 + Math.random() * 90,
+                    col: COLS[i % COLS.length], bands: AGE_BANDS.map(b => b[1]),
+                });
+            }
+            if (!raf) raf = requestAnimationFrame(tick);
+        };
+        addEventListener('pcb-burst', onBurst);
+        return () => { cancelAnimationFrame(raf); removeEventListener('resize', size); removeEventListener('pcb-burst', onBurst); };
+    }, []);
+    return <canvas ref={ref} aria-hidden="true" className="fixed inset-0 w-full h-full pointer-events-none z-[60]" />;
+};
+
+/* ═════════════════════════════════════════════
+   Shared bits
+   ═════════════════════════════════════════════ */
+const SectionHead = ({ title, children }) => (
+    <div className="mb-10 max-w-2xl">
+        <h2 className="text-3xl sm:text-[2.6rem] leading-[1.1] font-medium tracking-[-0.02em] text-ink">{title}</h2>
+        <p className="mt-3 text-muted text-base sm:text-lg leading-relaxed">{children}</p>
+    </div>
+);
+
+const Led = ({ on, color = '#10B981', size = 8 }) => (
+    <span aria-hidden="true" className="inline-block rounded-full transition-all duration-300"
+          style={{ width: size, height: size, background: on ? color : '#2a3242',
+                   boxShadow: on ? `0 0 ${size}px ${color}, 0 0 ${size * 2.5}px ${color}55` : 'none' }} />
+);
+
+const Btn = ({ children, onClick, disabled, tone = 'neon', className = '' }) => {
+    const tones = {
+        neon:   'text-neon border-neon/30 hover:bg-neon/10 hover:border-neon/60',
+        copper: 'text-copper border-copper/30 hover:bg-copper/10 hover:border-copper/60',
+        quiet:  'text-muted border-edge hover:text-ink hover:border-dim',
+    };
+    return (
+        <button onClick={onClick} disabled={disabled}
+            className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors duration-200
+                        disabled:opacity-40 disabled:cursor-not-allowed active:translate-y-px ${tones[tone]} ${className}`}>
+            {children}
+        </button>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   Rotary knob (drag, arrow keys, Home/End)
+   ═════════════════════════════════════════════ */
+const Knob = ({ label, value, min, max, step, kbStep = step, onChange, format, disabled }) => {
+    const start = useRef(null);
+    const t = (value - min) / (max - min);
+    const ang = -135 + t * 270;
+    const set = v => onChange(+(Math.round(Math.min(max, Math.max(min, v)) / step) * step).toFixed(4));
+
+    const down = e => {
+        if (disabled) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        start.current = { x: e.clientX, y: e.clientY, v: value };
+    };
+    const move = e => {
+        if (!start.current) return;
+        const d = (start.current.y - e.clientY) + (e.clientX - start.current.x);
+        set(start.current.v + d / 280 * (max - min));
+    };
+    const up = () => { start.current = null; };
+    const key = e => {
+        const m = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 10, PageDown: -10 }[e.key];
+        if (m) { e.preventDefault(); set(value + m * kbStep); }
+        if (e.key === 'Home') { e.preventDefault(); set(min); }
+        if (e.key === 'End')  { e.preventDefault(); set(max); }
+    };
+
+    const ticks = Array.from({ length: 21 }, (_, i) => {
+        const a = (-135 + i * 13.5 - 90) * Math.PI / 180, r2 = i % 5 ? 38.5 : 40.5;
+        return { x1: 42 + Math.cos(a) * 35, y1: 42 + Math.sin(a) * 35, x2: 42 + Math.cos(a) * r2, y2: 42 + Math.sin(a) * r2, on: i / 20 <= t + 1e-6 };
+    });
+
+    return (
+        <div className="flex flex-col items-center gap-1.5 select-none">
+            <div role="slider" tabIndex={disabled ? -1 : 0} aria-label={label}
+                 aria-valuemin={min} aria-valuemax={max} aria-valuenow={value} aria-valuetext={format(value)} aria-disabled={disabled}
+                 onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={disabled ? undefined : key}
+                 className={`rounded-full ${disabled ? 'opacity-50' : 'cursor-grab active:cursor-grabbing'}`}
+                 style={{ touchAction: 'none' }}>
+                <svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true">
+                    <defs>
+                        <radialGradient id="knobBody" cx="40%" cy="30%" r="75%">
+                            <stop offset="0" stopColor="#2b3446" /><stop offset="1" stopColor="#10151f" />
+                        </radialGradient>
+                    </defs>
+                    {ticks.map((k, i) => (
+                        <line key={i} x1={k.x1} y1={k.y1} x2={k.x2} y2={k.y2} strokeLinecap="round"
+                              stroke={k.on ? '#00F2FE' : '#2d3748'} strokeWidth={i % 5 ? 1.2 : 1.8} opacity={k.on ? .9 : 1} />
+                    ))}
+                    <circle cx="42" cy="42" r="28" fill="url(#knobBody)" stroke="#303a4d" />
+                    <circle cx="42" cy="42" r="21" fill="#131a26" stroke="#1f2837" />
+                    <g transform={`rotate(${ang} 42 42)`}>
+                        <line x1="42" y1="19" x2="42" y2="29" stroke="#00F2FE" strokeWidth="2.6" strokeLinecap="round" />
+                    </g>
+                </svg>
+            </div>
+            <div className="text-center leading-tight">
+                <div className="text-[13px] text-ink">{label}</div>
+                <div className="font-mono text-[11px] text-neon tabular-nums">{format(value)}</div>
+            </div>
+        </div>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   0  Gift intro: scroll to unwrap
+   ═════════════════════════════════════════════ */
+const GIFTS = [
+    { x: -1.00, y: .62, r: -18, el: (   /* heart */
+        <svg width="46" height="42" viewBox="0 0 46 42"><path d="M23 40 C6 28 1 19 1 12 C1 5 7 1 12.5 1 C17 1 21 4 23 8 C25 4 29 1 33.5 1 C39 1 45 5 45 12 C45 19 40 28 23 40 Z" fill="#FF5FA2" /><ellipse cx="13" cy="11" rx="4" ry="3" fill="#fff" opacity=".45" /></svg>) },
+    { x: -.55, y: .98, r: 12, el: (     /* chip */
+        <svg width="54" height="44" viewBox="0 0 54 44"><g fill="#D4AF37">{[8, 17, 26, 35].map(y => <g key={y}><rect x="0" y={y} width="7" height="3" /><rect x="47" y={y} width="7" height="3" /></g>)}</g><rect x="6" y="2" width="42" height="40" rx="4" fill="#1b2231" stroke="#34415a" /><circle cx="13" cy="9" r="2.4" fill="#0b0f16" /><text x="27" y="27" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#8391A7">{CFG.age}</text></svg>) },
+    { x: 0, y: 1.18, r: 0, el: (        /* LED */
+        <svg width="34" height="62" viewBox="0 0 34 62"><circle cx="17" cy="16" r="16" fill="#00F2FE" opacity=".25" /><path d="M7 30 V16 A10 10 0 0 1 27 16 V30 Z" fill="#00F2FE" /><rect x="5" y="29" width="24" height="4" rx="1" fill="#00b8c2" /><line x1="13" y1="33" x2="13" y2="60" stroke="#aab3be" strokeWidth="2" /><line x1="21" y1="33" x2="21" y2="54" stroke="#aab3be" strokeWidth="2" /><ellipse cx="13" cy="15" rx="2.4" ry="4.5" fill="#fff" opacity=".6" /></svg>) },
+    { x: .55, y: .96, r: -14, el: (     /* age resistor */
+        <svg width="84" height="22" viewBox="0 0 84 22"><line x1="0" y1="11" x2="84" y2="11" stroke="#aab3be" strokeWidth="2" /><rect x="20" y="2" width="44" height="18" rx="9" fill="#d9c7a0" />{AGE_BANDS.map(([, c], i) => <rect key={i} x={28 + i * 8} y="2" width="4" height="18" fill={c} />)}<rect x="54" y="2" width="4" height="18" fill="#D4AF37" /></svg>) },
+    { x: 1.00, y: .64, r: 16, el: (     /* sparkle */
+        <svg width="40" height="40" viewBox="0 0 40 40"><path d="M20 0 C22 13 27 18 40 20 C27 22 22 27 20 40 C18 27 13 22 0 20 C13 18 18 13 20 0 Z" fill="#FFD27A" /></svg>) },
+];
+
+const GiftIntro = () => {
+    const wrap = useRef(null), stage = useRef(null), lid = useRef(null), glow = useRef(null), rays = useRef(null);
+    const intro = useRef(null), cue = useRef(null), ready = useRef(null), items = useRef([]);
+    const fired = useRef(false);
+
+    useEffect(() => {
+        let raf = 0;
+        const clamp = v => Math.min(1, Math.max(0, v));
+        const ease = t => t * t * (3 - 2 * t);
+        const update = () => {
+            raf = 0;
+            const r = wrap.current.getBoundingClientRect();
+            const total = r.height - innerHeight;
+            const p = total > 0 ? clamp(-r.top / total) : 0;
+            const seg = (a, b) => ease(clamp((p - a) / (b - a)));
+            const untie = seg(.04, .18), lift = seg(.14, .4), rise = seg(.32, .62), light = seg(.28, .56), out = seg(.8, 1);
+            const w = stage.current.offsetWidth;
+
+            intro.current.style.opacity = 1 - seg(0, .14);
+            intro.current.style.transform = `translateY(${-30 * seg(0, .14)}px)`;
+            cue.current.style.opacity = 1 - seg(0, .08);
+            ready.current.style.opacity = seg(.5, .62);
+
+            lid.current.style.transform =
+                `translate(${-lift * 34}%, ${-lift * 330}%) rotate(${-lift * 28 - untie * 3}deg)`;
+            lid.current.style.opacity = 1 - seg(.34, .46);
+            lid.current.querySelector('.bow').style.transform = `translateX(-50%) scale(${1 + untie * .12}) rotate(${Math.sin(untie * Math.PI * 3) * 8}deg)`;
+
+            glow.current.style.opacity = light * .8 * (1 - out * .6);
+            glow.current.style.transform = `translate(-50%, -50%) scale(${.5 + light * .9})`;
+            rays.current.style.opacity = light * .5 * (1 - out * .5);
+
+            items.current.forEach((el, i) => {
+                if (!el) return;
+                const g = GIFTS[i], d = clamp(rise * 1.25 - i * .06);
+                el.style.transform = `translate(calc(-50% + ${g.x * w * .62 * d}px), ${-g.y * w * .72 * d}px) rotate(${g.r * d}deg) scale(${.6 + .75 * d})`;
+                el.style.opacity = Math.min(1, d * 3);
+            });
+
+
+            if (lift > .55 && !fired.current) {
+                fired.current = true;
+                const b = stage.current.getBoundingClientRect();
+                burst({ x: b.left + b.width / 2, y: b.top + b.height * .25, n: 70 });
+            }
+            if (p < .08) fired.current = false;
+        };
+        const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+        /* re-measure whenever layout settles (Tailwind styles arrive after first paint) */
+        const ro = new ResizeObserver(onScroll); ro.observe(wrap.current);
+        update();
+        addEventListener('scroll', onScroll, { passive: true });
+        addEventListener('resize', onScroll);
+        return () => { cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); };
+    }, []);
+
+    /* tapping the box opens it (scrolls to the open state) */
+    const open = () => {
+        const r = wrap.current.getBoundingClientRect();
+        const total = r.height - innerHeight;
+        scrollTo({ top: scrollY + r.top + total * .6, behavior: REDUCED ? 'auto' : 'smooth' });
+    };
+
+    return (
+        <section ref={wrap} className="relative h-[300vh]" aria-label={`A present for ${CFG.nick}`}>
+            <div className="sticky top-0 h-screen overflow-hidden flex flex-col items-center justify-center px-5">
+                <div ref={intro} className="absolute top-[11vh] inset-x-0 text-center px-5">
+                    <p className="font-serif italic text-5xl sm:text-7xl text-ink leading-none">For you, {CFG.nick}.</p>
+                    <p className="mt-4 text-muted text-base sm:text-lg">Something small, wrapped with a lot of love.</p>
+                </div>
+
+                <div ref={stage} className="gift-stage relative mt-16" style={{ width: 'var(--w)', height: 'calc(var(--w) * .98)' }}>
+                    {/* light from inside */}
+                    <div ref={glow} className="absolute left-1/2 top-[30%] w-[260%] aspect-square rounded-full pointer-events-none opacity-0"
+                         style={{ background: 'radial-gradient(circle, rgba(255,210,122,.55), rgba(255,95,162,.18) 35%, transparent 65%)' }} />
+                    <div ref={rays} className="absolute left-1/2 top-[30%] -translate-x-1/2 -translate-y-1/2 w-[320%] aspect-square pointer-events-none opacity-0">
+                        <div className="rays w-full h-full rounded-full" />
+                    </div>
+
+                    {/* little gifts that rise out */}
+                    {GIFTS.map((g, i) => (
+                        <div key={i} ref={el => (items.current[i] = el)} className="absolute left-1/2 top-[34%] opacity-0 pointer-events-none"
+                             style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,.5))' }}>{g.el}</div>
+                    ))}
+
+                    <button onClick={open} aria-label="Open the present" className="gift-float absolute inset-x-0 bottom-0 block" style={{ height: 'calc(var(--w) * .98)' }}>
+                        {/* box body */}
+                        <span className="gift-paper absolute left-0 right-0 bottom-0 rounded-[10px] border border-white/[.06] shadow-[0_30px_60px_-20px_rgba(0,0,0,.9)] overflow-hidden"
+                              style={{ height: 'calc(var(--w) * .74)' }}>
+                            <span className="ribbon absolute inset-y-0 left-1/2 -translate-x-1/2 w-[15%]" />
+                            <span className="absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-black/50 to-transparent" />
+                        </span>
+                        {/* gift tag */}
+                        <span className="absolute -right-3 sm:-right-8 bottom-[22%] rotate-[8deg] origin-top-left">
+                            <span className="block w-px h-6 bg-copper/60 ml-3" />
+                            <span className="block bg-[#f1ece2] text-[#1b2231] rounded-md px-3 py-2 shadow-lg text-left">
+                                <span className="block font-serif italic text-lg leading-none">For {CFG.nick}</span>
+                                <span className="block text-[11px] mt-1 text-[#56627A]">from {CFG.from}</span>
+                            </span>
+                        </span>
+                        {/* lid + bow */}
+                        <span ref={lid} className="absolute -left-[4%] -right-[4%] rounded-[8px] origin-bottom-left will-change-transform"
+                              style={{ bottom: 'calc(var(--w) * .72)', height: 'calc(var(--w) * .2)' }}>
+                            <span className="gift-paper absolute inset-0 rounded-[8px] border border-white/[.08] shadow-[0_8px_18px_rgba(0,0,0,.55)] overflow-hidden">
+                                <span className="ribbon absolute inset-y-0 left-1/2 -translate-x-1/2 w-[14%]" />
+                            </span>
+                            <span className="bow absolute left-1/2 bottom-[88%] block" style={{ width: 'calc(var(--w) * .5)', transformOrigin: '50% 100%' }}>
+                                <svg viewBox="0 0 120 70" className="w-full h-auto block" aria-hidden="true">
+                                    <defs><linearGradient id="bowG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff8cbc" /><stop offset="1" stopColor="#c8005f" /></linearGradient></defs>
+                                    <path d="M60 58 C40 30 8 20 6 40 C4 58 36 62 60 58 Z" fill="url(#bowG)" />
+                                    <path d="M60 58 C80 30 112 20 114 40 C116 58 84 62 60 58 Z" fill="url(#bowG)" />
+                                    <path d="M56 58 L40 70 M64 58 L80 70" stroke="#c8005f" strokeWidth="7" strokeLinecap="round" />
+                                    <ellipse cx="60" cy="56" rx="11" ry="9" fill="#FF3D8E" />
+                                    <ellipse cx="57" cy="53" rx="4" ry="2.5" fill="#fff" opacity=".45" />
+                                </svg>
+                            </span>
+                        </span>
+                    </button>
+                </div>
+
+                <p ref={ready} className="absolute bottom-[12vh] inset-x-0 text-center font-serif italic text-2xl sm:text-3xl text-ink opacity-0 px-5">
+                    There's more inside. Keep scrolling.
+                </p>
+                <div ref={cue} className="absolute bottom-8 inset-x-0 flex flex-col items-center gap-2 text-muted text-sm">
+                    <span>Scroll to open</span>
+                    <svg className="cue" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 7l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   Sparky: a tiny chip who reacts to the signal
+   mood: lost | curious | happy
+   ═════════════════════════════════════════════ */
+const Sparky = ({ mood }) => {
+    const bulb = { lost: '#F59E0B', curious: '#00F2FE', happy: '#FF5FA2' }[mood];
+    return (
+        <svg width="60" height="64" viewBox="0 0 64 68" className="shrink-0 overflow-visible" role="img"
+             aria-label={`Sparky looks ${mood === 'happy' ? 'delighted' : mood === 'curious' ? 'curious' : 'confused'}`}>
+            <g className="bob">
+                {/* antenna */}
+                <line x1="32" y1="16" x2="32" y2="6" stroke="#56627A" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="32" cy="5" r="3.6" fill={bulb} className="antenna" style={{ filter: `drop-shadow(0 0 4px ${bulb})`, transition: 'fill .4s' }} />
+                {/* pins */}
+                <g fill="#D4AF37" opacity=".85">
+                    {[26, 34, 42].map(y => <g key={y}><rect x="5" y={y} width="6" height="3" rx="1" /><rect x="53" y={y} width="6" height="3" rx="1" /></g>)}
+                    <rect x="23" y="56" width="3" height="7" rx="1" /><rect x="38" y="56" width="3" height="7" rx="1" />
+                </g>
+                {/* body */}
+                <rect x="10" y="16" width="44" height="41" rx="13" fill="#1e2738" stroke="#34415a" />
+                <circle cx="17" cy="23" r="1.6" fill="#0b0f16" />
+                {/* face */}
+                {mood === 'happy' ? (
+                    <g stroke="#E6EAF0" strokeWidth="2.4" fill="none" strokeLinecap="round">
+                        <path d="M20 34 Q24 29 28 34" /><path d="M36 34 Q40 29 44 34" />
+                        <path d="M26 41 Q32 47 38 41" />
+                    </g>
+                ) : mood === 'curious' ? (
+                    <g>
+                        <g className="eyeblink"><circle cx="24" cy="33" r="4.2" fill="#E6EAF0" /><circle cx="40" cy="33" r="4.2" fill="#E6EAF0" /></g>
+                        <circle cx="25.5" cy="31.5" r="1.4" fill="#1e2738" /><circle cx="41.5" cy="31.5" r="1.4" fill="#1e2738" />
+                        <ellipse cx="32" cy="44" rx="2.6" ry="3" fill="none" stroke="#E6EAF0" strokeWidth="2" />
+                    </g>
+                ) : (
+                    <g>
+                        <g className="look"><g className="eyeblink"><circle cx="24" cy="33" r="3" fill="#E6EAF0" /><circle cx="40" cy="33" r="3" fill="#E6EAF0" /></g></g>
+                        <path d="M26 44 q1.5 -2 3 0 t3 0 t3 0 t3 0" fill="none" stroke="#E6EAF0" strokeWidth="1.8" strokeLinecap="round" />
+                    </g>
+                )}
+                {/* cheeks */}
+                <ellipse cx="17.5" cy="40" rx="3.6" ry="2.2" fill="#FF5FA2" style={{ opacity: mood === 'happy' ? .55 : mood === 'curious' ? .18 : 0, transition: 'opacity .5s' }} />
+                <ellipse cx="46.5" cy="40" rx="3.6" ry="2.2" fill="#FF5FA2" style={{ opacity: mood === 'happy' ? .55 : mood === 'curious' ? .18 : 0, transition: 'opacity .5s' }} />
+            </g>
+            {/* floating hearts when happy */}
+            {mood === 'happy' && [[50, 10, 0], [12, 12, .8], [56, 22, 1.6]].map(([x, y, d], i) => (
+                <path key={i} className="float-heart" style={{ animationDelay: `${d}s` }} fill="#FF5FA2"
+                      d={`M${x} ${y + 2} c0 -2.4 -4 -2.4 -4 0 c0 2.4 4 4.4 4 6 c0 -1.6 4 -3.6 4 -6 c0 -2.4 -4 -2.4 -4 0 z`} />
+            ))}
+        </svg>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   1  Oscilloscope hero
+   ═════════════════════════════════════════════ */
+const Hero = () => {
+    const [freq, setFreq]     = useState(1.2);
+    const [amp, setAmp]       = useState(40);
+    const [baud, setBaud]     = useState(2400);
+    const [locked, setLocked] = useState(false);
+    const [tuning, setTuning] = useState(false);
+    const canvasRef = useRef(null), screenRef = useRef(null);
+    const P = useRef({ freq, amp, baud, locked: false, lockAt: 0 });
+
+    useEffect(() => { Object.assign(P.current, { freq, amp, baud }); }, [freq, amp, baud]);
+
+    /* scope render loop: reads params from a ref so it never restarts */
+    useEffect(() => {
+        const c = canvasRef.current, ctx = c.getContext('2d');
+        let W = 0, H = 0, raf = 0, visible = true, n = 0;
+        const fit = () => {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            W = c.clientWidth; H = c.clientHeight;
+            c.width = W * dpr; c.height = H * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        const ro = new ResizeObserver(fit); ro.observe(c); fit();
+        const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }); io.observe(c);
+        const TAU = Math.PI * 2;
+
+        const frame = t => {
+            raf = requestAnimationFrame(frame);
+            if (!visible || !W) return;
+            const { freq, amp, baud, locked, lockAt } = P.current;
+            const lk = locked ? Math.min(1, (t - lockAt) / 1600) : 0;
+            const k  = lk * lk * (3 - 2 * lk);
+            const ph = t / 1000, mid = H / 2;
+            const q  = Math.max(0, 1 - Math.abs(freq - TARGET) / 2.2);
+            const noise = (.1 + (1 - q) * .9) * (1 - k);
+            const bitsAcross = Math.max(2, baud / 300);
+
+            /* phosphor persistence: fade previous frames to transparent */
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = `rgba(0,0,0,${REDUCED ? 1 : .32 + k * .45})`;
+            ctx.fillRect(0, 0, W, H);
+            ctx.globalCompositeOperation = 'source-over';
+
+            /* reference trace at the resonant frequency */
+            if (k < 1) {
+                ctx.save();
+                ctx.globalAlpha = .45 * (1 - k);
+                ctx.setLineDash([2, 6]); ctx.strokeStyle = '#D4AF37'; ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let x = 0; x <= W; x += 3) {
+                    const y = mid + Math.sin((x / W) * TARGET * 2 * TAU - ph * 4) * H * .3;
+                    x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+                }
+                ctx.stroke(); ctx.restore();
+            }
+
+            /* live signal: AM carrier + noise, morphing into a heartbeat on lock */
+            ctx.strokeStyle = '#00F2FE'; ctx.lineWidth = 1.8;
+            ctx.shadowColor = 'rgba(0,242,254,.8)'; ctx.shadowBlur = 10;
+            ctx.beginPath();
+            for (let x = 0; x <= W; x += 2) {
+                const u = x / W;
+                const bi = Math.floor(u * bitsAcross + ph * 1.2);
+                const bit = BITS[((bi % BITS.length) + BITS.length) % BITS.length];
+                n = n * .5 + (Math.random() * 2 - 1) * .5;
+                const analog  = Math.sin(u * freq * 2 * TAU - ph * 4) * (.6 + .4 * bit) * (amp / 100) * H * .32 + n * noise * H * .22;
+                const s = ((u * BEATS - ph * .8) % 1 + 1) % 1;
+                const pulse = -ecg(s) * H * .34 + H * .08;
+                const y = mid + analog * (1 - k) + pulse * k;
+                x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+            }
+            ctx.stroke(); ctx.shadowBlur = 0;
+
+            /* a little heart rides every beat once locked */
+            if (k > .6) {
+                ctx.save();
+                ctx.globalAlpha = (k - .6) / .4;
+                ctx.fillStyle = '#FF5FA2'; ctx.shadowColor = 'rgba(255,0,127,.8)'; ctx.shadowBlur = 12;
+                const first = Math.floor(-ph * .8) - 1;
+                for (let b = first; b <= first + BEATS + 2; b++) {
+                    const cx = (b + .34 + ph * .8) / BEATS * W;
+                    if (cx < 10 || cx > W - 10) continue;
+                    const s = 17 + Math.max(0, Math.sin(ph * 6)) * 4;
+                    heartPath(ctx, cx, mid - H * .34 + H * .08 - s - 12, s);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        };
+        raf = requestAnimationFrame(frame);
+        return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
+    }, []);
+
+    const lock = useCallback(() => {
+        P.current.locked = true; P.current.lockAt = performance.now();
+        setLocked(true);
+        const r = screenRef.current.getBoundingClientRect();
+        setTimeout(() => burst({ x: r.left + r.width / 2, y: r.top + r.height / 2, n: 120 }), 700);
+    }, []);
+
+    const detune = Math.abs(freq - TARGET);
+    useEffect(() => { if (!locked && detune <= .05 && amp >= 50) lock(); }, [detune, amp, locked, lock]);
+
+    const autoTune = () => {
+        if (locked || tuning) return;
+        setTuning(true);
+        const f0 = freq, a0 = amp, a1 = Math.max(amp, 80), t0 = performance.now(), D = REDUCED ? 1 : 1500;
+        const step = now => {
+            const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3);
+            setFreq(+(f0 + (TARGET - f0) * e).toFixed(2));
+            setAmp(Math.round(a0 + (a1 - a0) * e));
+            if (k < 1) requestAnimationFrame(step); else setTuning(false);
+        };
+        requestAnimationFrame(step);
+    };
+
+    const rescan = () => {
+        P.current.locked = false;
+        setLocked(false); setFreq(1.2); setAmp(40);
+    };
+
+    const q = Math.max(0, 1 - detune / 2.2);
+    const bars = locked ? 5 : Math.min(5, Math.floor(q * 5.2));
+    const mood = locked ? 'happy' : detune < .35 ? 'curious' : 'lost';
+    const hint = locked ? <>Found you! Happy birthday, {CFG.nick} <span className="text-[#FF5FA2]">♥</span></>
+        : detune <= .05 ? 'I can hear it! Turn Amplitude up a little?'
+        : detune < .35  ? 'Ooh, getting warmer. Go slow…'
+        : detune < 1    ? 'Hmm, still fuzzy. Keep turning Frequency.'
+        : 'Just static here. Try the Frequency knob?';
+
+    return (
+        <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-20 sm:pb-28 max-w-6xl mx-auto">
+            {/* headline: swaps from instruction to greeting on lock */}
+            <div className="grid mb-10 sm:mb-14">
+                <div className={`[grid-area:1/1] transition-all duration-500 ${locked ? 'opacity-0 -translate-y-2 pointer-events-none' : ''}`}
+                     aria-hidden={locked}>
+                    <h1 className="text-4xl sm:text-6xl font-medium tracking-[-0.035em] leading-[1.02] text-ink max-w-3xl">
+                        There's a signal out there with your name on it.
+                    </h1>
+                    <p className="mt-5 text-muted text-lg max-w-xl leading-relaxed">
+                        Sparky's picked up something, but it's all fuzz. Turn the Frequency knob until the
+                        wave matches the gold one. Hint: it's your age, divided by ten.
+                    </p>
+                </div>
+                <div className={`[grid-area:1/1] self-end reveal-scan ${locked ? 'on' : ''}`} aria-hidden={!locked} aria-live="polite">
+                    <h1 className="font-serif italic text-[3.4rem] sm:text-7xl lg:text-[6.6rem] leading-[.95] tracking-[-0.02em] text-ink">
+                        Happy birthday,<br className="lg:hidden" /> <span className="text-neon" style={{ textShadow: '0 0 40px rgba(0,242,254,.35)' }}>{CFG.nick}.</span>
+                    </h1>
+                    <p className="mt-5 text-muted text-lg max-w-xl leading-relaxed">
+                        {CFG.age} years on air and not a single dropped packet. Sparky's very proud. Scroll down, there's more.
+                    </p>
+                </div>
+            </div>
+
+            {/* instrument */}
+            <div className="rounded-[22px] p-2.5 sm:p-3 bg-gradient-to-b from-[#1a2130] to-[#0e131c] border border-white/[.06]
+                            shadow-[0_30px_80px_-30px_rgba(0,0,0,.8)]">
+                <div className="grid lg:grid-cols-[1fr_auto] gap-3">
+                    <div ref={screenRef} className="relative rounded-[14px] overflow-hidden bg-[#05080d] border border-black graticule
+                                                    h-[clamp(230px,52vw,400px)] lg:h-auto lg:min-h-[420px]">
+                        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" aria-label="Oscilloscope trace" role="img" />
+                        <div className="absolute top-3 left-4 font-mono text-[11px] text-neon/70 tabular-nums">CH1 {freq.toFixed(2)} MHz</div>
+                        <div className="absolute top-3 right-4 font-mono text-[11px] text-copper/70 tabular-nums">REF {TARGET.toFixed(2)} MHz</div>
+                        <div className="absolute bottom-3 left-4 font-mono text-[11px] text-dim tabular-nums">{amp}% amp, {baud} bd</div>
+                        <div className="absolute bottom-3 right-4 font-mono text-[11px] text-dim">{locked ? 'heart rate: very happy' : 'AM, 8N1'}</div>
+                        <div className={`absolute inset-x-0 bottom-[16%] sm:bottom-auto sm:top-[8%] px-3 text-center font-mono text-[10px] sm:text-sm tracking-[.06em] sm:tracking-[.12em] text-neon
+                                         transition-opacity duration-700 delay-700 ${locked ? 'opacity-100' : 'opacity-0'}`}
+                             style={{ textShadow: '0 0 12px rgba(0,242,254,.7)' }}>
+                            SIGNAL LOCKED: HAPPY BIRTHDAY {CFG.nick.toUpperCase()}! ♥
+                        </div>
+                    </div>
+
+                    <div className="rounded-[14px] bg-[#0f141d] border border-white/[.04] p-4 lg:w-[264px] flex flex-col gap-5">
+                        <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-4 justify-items-center">
+                            <Knob label="Frequency" value={freq} min={.5} max={6} step={.01} kbStep={.05}
+                                  onChange={setFreq} format={v => `${v.toFixed(2)} MHz`} disabled={locked || tuning} />
+                            <Knob label="Amplitude" value={amp} min={10} max={100} step={1} kbStep={2}
+                                  onChange={setAmp} format={v => `${v}%`} disabled={locked || tuning} />
+                            <Knob label="Baud rate" value={baud} min={600} max={9600} step={300}
+                                  onChange={setBaud} format={v => `${v} bd`} disabled={tuning} />
+                        </div>
+                        <div className="border-t border-white/[.05] pt-4">
+                            <div className="flex items-end gap-3 mb-3">
+                                <Sparky mood={mood} />
+                                <div className="relative flex-1 rounded-xl rounded-bl-sm bg-white/[.04] border border-white/[.06] px-3 py-2 mb-5">
+                                    <p className="text-[13px] text-ink/90 leading-snug min-h-[2.6em]" aria-live="polite">{hint}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-1 h-5" aria-label={`Signal strength ${bars} of 5`} role="img">
+                                {[0, 1, 2, 3, 4].map(i => (
+                                    <span key={i} className="w-2 rounded-sm transition-colors duration-300"
+                                          style={{ height: `${30 + i * 17}%`, background: i < bars ? (locked ? '#10B981' : '#00F2FE') : '#232C3D' }} />
+                                ))}
+                            </div>
+                            {locked
+                                ? <Btn tone="quiet" onClick={rescan} className="w-full mt-3">Scan again</Btn>
+                                : <Btn tone="copper" onClick={autoTune} disabled={tuning} className="w-full mt-3">Auto-tune</Btn>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   2  Main board
+   ═════════════════════════════════════════════ */
+const SEG = { 0: 'abcdef', 1: 'bc', 2: 'abdeg', 3: 'abcdg', 4: 'bcfg', 5: 'acdfg', 6: 'acdefg', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg' };
+const SEG_RECTS = {
+    a: [9, 2, 22, 6], b: [32, 9, 6, 24], c: [32, 37, 6, 24], d: [9, 62, 22, 6],
+    e: [2, 37, 6, 24], f: [2, 9, 6, 24], g: [9, 32, 22, 6],
+};
+const SevenSeg = ({ value, color }) => (
+    <div className="flex gap-1.5 px-3 py-2 rounded-md bg-black border border-white/[.05]" role="img" aria-label={`Displays ${value}`}>
+        {String(value).padStart(2, '0').split('').map((d, i) => (
+            <svg key={i} width="30" height="52" viewBox="0 0 40 70" aria-hidden="true">
+                <g transform="skewX(-6) translate(4 0)">
+                    {Object.entries(SEG_RECTS).map(([s, [x, y, w, h]]) => {
+                        const on = SEG[d].includes(s);
+                        return <rect key={s} x={x} y={y} width={w} height={h} rx="2.5"
+                                     fill={on ? color : '#1a1f29'}
+                                     style={on ? { filter: `drop-shadow(0 0 4px ${color})`, transition: 'fill .15s' } : { transition: 'fill .15s' }} />;
+                    })}
+                </g>
+            </svg>
+        ))}
+    </div>
+);
+
+const PARTS = {
+    U1:   { ref: 'U1', name: 'Microcontroller', value: `BDAY-MCU, rev ${CFG.age}.0`,
+            msg: `Running BirthdayOS v${CFG.age}.0. Every bug from the early builds got found and fixed along the way, and each update shipped a kinder, stronger, wiser system. Best release yet.` },
+    Y1:   { ref: 'Y1', name: 'Clock oscillator', value: '3.2 GHz crystal',
+            msg: `Celebrating another cycle around the sun at 3.2 GHz. ${CFG.age} full revolutions, zero drift.` },
+    C1:   { ref: 'C1', name: 'Capacitor', value: '100 µF electrolytic',
+            msg: 'Charged to capacity with good vibes. Discharge freely at the party.' },
+    Q1:   { ref: 'Q1', name: 'BJT transistor', value: 'NPN, TO-92',
+            msg: `Amplifying happiness since ${CFG.birthYear}. Gain has never been measured; the meter keeps clipping.` },
+    R1:   { ref: 'R1', name: 'Resistor', value: `${CFG.age} Ω, ±5%`,
+            msg: `Bands read ${AGE_BANDS.map(b => b[0]).join(', ')}, gold. The only resistance you'll meet today.` },
+    L1:   { ref: 'L1', name: 'Inductor', value: '4.7 µH',
+            msg: 'Resists any sudden change in current. Much like you resist leaving before the cake gets cut.' },
+    ANT1: { ref: 'ANT1', name: 'PCB antenna', value: '2.4 GHz meander',
+            msg: 'Tuned for maximum gain on good news. Reception today: excellent.' },
+    D1:   { ref: 'D1–D5', name: 'Status LEDs', value: '5 mm RGB',
+            msg: 'Your year ahead is brighter than a 10,000-lumen array. Flip Party mode to let them prove it.' },
+};
+
+const TRACES = [
+    { d: 'M220 113 H300 L359 172 H368',               net: 'CLK',     at: [262, 105] },
+    { d: 'M216 330 H300 L332 298 H368',               net: 'VCAP',    at: [246, 322] },
+    { d: 'M310 440 H400 L430 410 V362',               net: 'L_SW',    at: [338, 432] },
+    { d: 'M592 186 H660 L720 126 H755 V120',          net: 'BIAS',    at: [604, 178] },
+    { d: 'M592 270 H650',                             net: 'SENSE',   at: [600, 262] },
+    { d: 'M900 270 V404 L880 424',                    net: 'RTN',     at: [908, 340] },
+    { d: 'M514 362 V400 L554 440 H624',               net: 'LED_BUS', at: [540, 462] },
+    { d: 'M458 138 V90 L488 60 H620',                 net: 'RF_OUT',  at: [496, 52] },
+];
+const LEDS_X = [640, 700, 760, 820, 880];
+
+const Part = ({ id, sel, onSel, children, box }) => (
+    <g className={`part ${sel === id ? 'sel' : ''}`} role="button" tabIndex={0}
+       aria-label={`${PARTS[id].name}, ${PARTS[id].ref}`} aria-pressed={sel === id}
+       onClick={() => onSel(id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSel(id); } }}>
+        <rect className="hl" x={box[0] - 8} y={box[1] - 8} width={box[2] + 16} height={box[3] + 16} rx="6"
+              fill="rgba(0,242,254,.04)" stroke="#00F2FE" strokeWidth="1.2" strokeDasharray="4 4" />
+        {children}
+        <rect x={box[0] - 8} y={box[1] - 8} width={box[2] + 16} height={box[3] + 16} fill="transparent" />
+    </g>
+);
+
+const Silk = ({ x, y, children, anchor = 'start', size = 12 }) => (
+    <text x={x} y={y} textAnchor={anchor} fontFamily="JetBrains Mono, monospace" fontSize={size} fill="rgba(230,234,240,.42)">{children}</text>
+);
+
+const Board = () => {
+    const [oc, setOc]       = useState(false);
+    const [party, setParty] = useState(false);
+    const [debug, setDebug] = useState(false);
+    const [age, setAge]     = useState(0);
+    const [run, setRun]     = useState(0);   // bumps to restart the counter
+    const [sel, setSel]     = useState(null);
+    const ref = useRef(null);
+
+    /* count up once the board is on screen; restart when overclock toggles */
+    useEffect(() => {
+        const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setRun(r => r || 1); io.disconnect(); } }, { threshold: .3 });
+        io.observe(ref.current);
+        return () => io.disconnect();
+    }, []);
+    useEffect(() => {
+        if (!run) return;
+        if (REDUCED) { setAge(CFG.age); return; }
+        let v = 0, id;
+        setAge(0);
+        const tick = () => {
+            v++; setAge(v);
+            if (v < CFG.age) id = setTimeout(tick, oc ? 22 : 40 + Math.pow(v / CFG.age, 4) * 260);
+        };
+        id = setTimeout(tick, 250);
+        return () => clearTimeout(id);
+    }, [run, oc]);
+
+    const dips = [
+        { label: 'Overclock', on: oc,    set: () => { setOc(v => !v); setRun(r => r + 1); } },
+        { label: 'Party',     on: party, set: () => setParty(v => !v) },
+        { label: 'Debug',     on: debug, set: () => setDebug(v => !v) },
+    ];
+    const toggleSel = id => setSel(s => (s === id ? null : id));
+    const part = sel && PARTS[sel];
+    const pulse = oc ? '#F59E0B' : '#00F2FE';
+
+    return (
+        <section ref={ref} className="px-5 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
+            <SectionHead title="The main board">
+                Flip the DIP switches to change how the board runs. Tap any component to probe it.
+            </SectionHead>
+
+            <div className="relative rounded-[18px] border border-copper/25 bg-[#0D1320] overflow-hidden"
+                 style={{ '--pulse-dur': oc ? '.8s' : '2.8s' }}>
+                <div className="absolute inset-0 bg-board opacity-70 pointer-events-none" />
+                <div className="absolute inset-2 rounded-[12px] border border-copper/[.08] pointer-events-none" />
+
+                {/* control strip */}
+                <div className="relative flex flex-wrap items-end justify-between gap-6 px-5 sm:px-8 pt-6 sm:pt-8">
+                    <div>
+                        <div className="inline-flex gap-2 p-2 pb-1.5 rounded-md bg-[#8a1c2b] shadow-[inset_0_-2px_0_rgba(0,0,0,.35)]">
+                            {dips.map((d, i) => (
+                                <button key={d.label} role="switch" aria-checked={d.on} aria-label={d.label} onClick={d.set}
+                                        className="flex flex-col items-center gap-1 group">
+                                    <span className="relative w-6 h-10 rounded-[3px] bg-[#1b0a0e] border border-black/40">
+                                        <span className={`absolute left-[3px] right-[3px] h-4 rounded-[2px] bg-[#f1ece2] shadow
+                                                          transition-all duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]
+                                                          ${d.on ? 'top-[3px]' : 'top-[19px]'}`} />
+                                    </span>
+                                    <span className="font-mono text-[10px] text-white/70">{i + 1}</span>
+                                </button>
+                            ))}
+                            <span className="self-start font-mono text-[9px] text-white/70 pl-1 leading-none mt-0.5">ON<br />↑</span>
+                        </div>
+                        <div className="mt-2 flex gap-4 text-[13px]">
+                            {dips.map((d, i) => (
+                                <span key={d.label} className={d.on ? 'text-ink' : 'text-dim'}>
+                                    <span className="font-mono text-[11px] mr-1">{i + 1}</span>{d.label}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="text-right text-[13px] leading-snug">
+                            <div className="text-ink">Age register</div>
+                            <div className="font-mono text-[11px] text-dim">0x{age.toString(16).toUpperCase().padStart(2, '0')}</div>
+                        </div>
+                        <SevenSeg value={age} color={party ? '#FF007F' : '#00F2FE'} />
+                    </div>
+                </div>
+
+                {/* the PCB */}
+                <svg viewBox="0 0 960 520" className="relative w-full h-auto block" role="group" aria-label="Circuit board">
+                    <defs>
+                        <linearGradient id="can" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stopColor="#b8c0ca" /><stop offset=".5" stopColor="#7d8692" /><stop offset="1" stopColor="#5a626d" />
+                        </linearGradient>
+                        <radialGradient id="heat"><stop offset="0" stopColor="#F59E0B" stopOpacity=".45" /><stop offset="1" stopColor="#F59E0B" stopOpacity="0" /></radialGradient>
+                        <radialGradient id="ledHalo"><stop offset="0" stopColor="#fff" stopOpacity=".9" /><stop offset=".3" stopColor="#fff" stopOpacity=".25" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+                    </defs>
+
+                    {/* mounting holes */}
+                    {[[34, 34], [926, 34], [34, 486], [926, 486]].map(([x, y], i) => (
+                        <g key={i}><circle cx={x} cy={y} r="13" fill="none" stroke="#D4AF37" strokeOpacity=".5" strokeWidth="5" /><circle cx={x} cy={y} r="8" fill="#070a10" /></g>
+                    ))}
+
+                    {/* thermal bloom under the MCU when overclocked */}
+                    <circle cx="480" cy="250" r="190" fill="url(#heat)" style={{ opacity: oc ? 1 : 0, transition: 'opacity .8s' }} />
+
+                    {/* copper traces + vias */}
+                    <g stroke="#D4AF37" strokeOpacity=".4" strokeWidth="3.5" fill="none" strokeLinejoin="round">
+                        {TRACES.map((t, i) => <path key={i} d={t.d} />)}
+                        <path d="M624 440 H880" />
+                        <path d="M620 60 H640 V36 H660 V60 H680 V36 H700 V60 H720 V36 H740 V60 H760 V36 H780 V60 H800 V36 H820 V60 H840" />
+                    </g>
+                    <g fill="#0D1320" stroke="#D4AF37" strokeOpacity=".7" strokeWidth="2">
+                        {[[300, 113], [300, 330], [400, 440], [660, 186], [554, 440], [488, 60], [900, 404]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="4.5" />)}
+                    </g>
+
+                    {/* current pulses (glow + core share timing so they stay in sync) */}
+                    <g style={{ transition: 'stroke .4s' }}>
+                        {TRACES.map((t, i) => (
+                            <g key={i}>
+                                <path d={t.d} className="trace-pulse" stroke={pulse} strokeOpacity=".25" strokeWidth="8" style={{ animationDelay: `${-i * .37}s` }} />
+                                <path d={t.d} className="trace-pulse" stroke={pulse} strokeWidth="2.5" style={{ animationDelay: `${-i * .37}s` }} />
+                            </g>
+                        ))}
+                    </g>
+
+                    {/* U1: QFP microcontroller */}
+                    <Part id="U1" sel={sel} onSel={toggleSel} box={[368, 138, 224, 224]}>
+                        <g fill="#D4AF37" fillOpacity=".85">
+                            {Array.from({ length: 12 }, (_, i) => {
+                                const o = 22 + i * 14;
+                                return <g key={i}>
+                                    <rect x="368" y={150 + o - 2.5} width="12" height="5" />
+                                    <rect x="580" y={150 + o - 2.5} width="12" height="5" />
+                                    <rect x={380 + o - 2.5} y="138" width="5" height="12" />
+                                    <rect x={380 + o - 2.5} y="350" width="5" height="12" />
+                                </g>;
+                            })}
+                        </g>
+                        <rect x="380" y="150" width="200" height="200" rx="6" fill="#141a25" stroke="#2c3546" />
+                        <circle cx="400" cy="170" r="5" fill="#0b0f16" stroke="#2c3546" />
+                        <text x="480" y="244" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="19" fontWeight="500" fill="#c9d1dc">BDAY-MCU</text>
+                        <text x="480" y="270" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="13" fill="#6b778c">KD{CFG.birthYear}-{CFG.age}</text>
+                        <Silk x="368" y="128" size={13}>U1</Silk>
+                    </Part>
+
+                    {/* Y1: crystal can */}
+                    <Part id="Y1" sel={sel} onSel={toggleSel} box={[100, 90, 120, 46]}>
+                        <rect x="100" y="90" width="120" height="46" rx="23" fill="url(#can)" />
+                        <rect x="108" y="96" width="104" height="34" rx="17" fill="none" stroke="#fff" strokeOpacity=".25" />
+                        <text x="160" y="118" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="12" fill="#1c222c">3.2G</text>
+                        <Silk x="100" y="80" size={13}>Y1</Silk>
+                    </Part>
+
+                    {/* C1: electrolytic cap, top view */}
+                    <Part id="C1" sel={sel} onSel={toggleSel} box={[124, 284, 92, 92]}>
+                        <circle cx="170" cy="330" r="46" fill="#1d2838" stroke="#3a4a63" strokeWidth="2" />
+                        <path d="M170 284 A46 46 0 0 1 216 330 L200 330 A30 30 0 0 0 170 300 Z" fill="#8a97aa" opacity=".6" />
+                        <path d="M150 330 H190 M170 310 V350" stroke="#0b0f16" strokeWidth="3" />
+                        <Silk x="124" y="398" size={13}>C1</Silk>
+                    </Part>
+
+                    {/* L1: shielded inductor */}
+                    <Part id="L1" sel={sel} onSel={toggleSel} box={[250, 410, 60, 60]}>
+                        <rect x="250" y="410" width="60" height="60" rx="8" fill="#20262f" stroke="#3a4454" />
+                        <circle cx="280" cy="440" r="18" fill="none" stroke="#5b6677" strokeWidth="3" />
+                        <circle cx="280" cy="440" r="8" fill="none" stroke="#5b6677" strokeWidth="2" />
+                        <Silk x="250" y="492" size={13}>L1</Silk>
+                    </Part>
+
+                    {/* Q1: TO-92 transistor */}
+                    <Part id="Q1" sel={sel} onSel={toggleSel} box={[720, 76, 70, 44]}>
+                        <path d="M720 120 V100 A35 24 0 0 1 790 100 V120 Z" fill="#161b24" stroke="#343e50" />
+                        <text x="755" y="112" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#7c8799">NPN</text>
+                        <Silk x="798" y="104" size={13}>Q1</Silk>
+                    </Part>
+
+                    {/* R1: through-hole resistor with age-encoded bands */}
+                    <Part id="R1" sel={sel} onSel={toggleSel} box={[650, 246, 250, 48]}>
+                        <line x1="650" y1="270" x2="900" y2="270" stroke="#aab3be" strokeWidth="3" />
+                        <circle cx="650" cy="270" r="9" fill="#0D1320" stroke="#D4AF37" strokeWidth="4" />
+                        <circle cx="900" cy="270" r="9" fill="#0D1320" stroke="#D4AF37" strokeWidth="4" />
+                        <rect x="700" y="249" width="150" height="42" rx="21" fill="#d9c7a0" />
+                        {AGE_BANDS.map(([, c], i) => <rect key={i} x={728 + i * 22} y="249" width="10" height="42" fill={c} />)}
+                        <rect x="814" y="249" width="10" height="42" fill="#D4AF37" />
+                        <Silk x="700" y="236" size={13}>R1 {CFG.age}R</Silk>
+                    </Part>
+
+                    {/* ANT1: meander antenna label/hitbox */}
+                    <Part id="ANT1" sel={sel} onSel={toggleSel} box={[636, 32, 208, 32]}>
+                        <Silk x="850" y="54" size={13}>ANT1</Silk>
+                    </Part>
+
+                    {/* D1–D5: status LEDs */}
+                    <Part id="D1" sel={sel} onSel={toggleSel} box={[620, 420, 280, 40]}>
+                        {LEDS_X.map((x, i) => (
+                            <g key={i}>
+                                <circle cx={x} cy="440" r="26" fill="url(#ledHalo)" opacity={party ? .5 : .18} style={{ mixBlendMode: 'screen' }} />
+                                <circle cx={x} cy="440" r="17" fill="#0b0f16" stroke="#2c3546" />
+                                <circle cx={x} cy="440" r="12" className={party ? 'party-led' : ''}
+                                        fill={party ? '#FF007F' : (i === 0 ? '#10B981' : '#123026')}
+                                        style={{ animationDelay: `${-i * .32}s` }} />
+                                <circle cx={x - 4} cy="436" r="3" fill="#fff" opacity=".35" />
+                            </g>
+                        ))}
+                        <Silk x="620" y="486" size={13}>D1–D5</Silk>
+                    </Part>
+
+                    {/* debug net labels */}
+                    <g style={{ opacity: debug ? 1 : 0, transition: 'opacity .3s' }} aria-hidden={!debug}
+                       fontFamily="JetBrains Mono, monospace" fontSize="12" fill="#10B981">
+                        {TRACES.map((t, i) => <text key={i} x={t.at[0]} y={t.at[1]}>{t.net}</text>)}
+                        <text x="480" y="300" textAnchor="middle">3V3, {oc ? '4.8' : '3.2'} GHz</text>
+                    </g>
+
+                    <Silk x="64" y="506" size={12}>KD-BDAY-PCB  REV {CFG.age}.0</Silk>
+                    <Silk x="896" y="506" size={12} anchor="end">{CFG.birthYear}–{CFG.birthYear + CFG.age}</Silk>
+                </svg>
+
+                {/* probe readout */}
+                <div className="relative border-t border-copper/15 bg-black/30 px-5 sm:px-8 py-5 min-h-[112px]" aria-live="polite">
+                    {part ? (
+                        <div className="grid sm:grid-cols-[88px_1fr] gap-x-6 gap-y-1">
+                            <div className="font-mono text-2xl text-neon">{part.ref}</div>
+                            <div>
+                                <div className="text-ink font-medium">{part.name} <span className="text-dim font-normal">{part.value}</span></div>
+                                <p className="mt-1 text-muted leading-relaxed max-w-2xl">{part.msg}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-muted">Nothing probed yet. Tap the crystal, the big chip, the resistor or anything else on the board.</p>
+                    )}
+                    {debug && (
+                        <p className="mt-3 font-mono text-xs text-phosphor/80">
+                            clk {oc ? '4.8' : '3.2'} GHz, party {party ? 'on' : 'off'}, age_reg {age}/{CFG.age}, memories loaded: {CFG.age} yrs, bugs patched: all of them
+                        </p>
+                    )}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   3  Transmission terminal + Morse channel
+   ═════════════════════════════════════════════ */
+const POST = [
+    { t: `BIOS  Birthday Input/Output System v${CFG.age}.0`, c: 'text-copper', d: 120 },
+    { t: `(C) ${CFG.birthYear}-${CFG.birthYear + CFG.age} ${CFG.from}`, c: 'text-dim', d: 120 },
+    { t: '', d: 80 },
+    { tag: 'OK', t: `CPU   ${CFG.nick}-class core detected, 1 socket, unlimited threads`, d: 260 },
+    { tag: 'OK', t: `RAM   ${(CFG.age * 365).toLocaleString()} days of random-access memories mapped`, d: 240 },
+    { tag: 'OK', t: 'GPU   Good Person Unit rendering at a steady 144 fps', d: 220 },
+    { tag: 'OK', t: 'NIC   Network of incredible companions: link up, full duplex', d: 240 },
+    { tag: 'OK', t: 'PSU   Running on caffeine and good intentions', d: 220 },
+    { tag: 'WARN', t: `CAKE  ${CFG.age} candles exceed thermal design power`, d: 420 },
+    { tag: 'OK', t: 'FAN   Spun up. Party in progress.', d: 200 },
+    { t: '', d: 80 },
+    { t: `Self-test passed. Booting BirthdayOS ${CFG.age}.0`, c: 'text-neon', d: 380 },
+    { t: 'Opening /dev/ttyRX0 ... 1 frame waiting', c: 'text-muted', d: 460 },
+];
+const HEX = (() => {
+    const bytes = new TextEncoder().encode(CFG.message).slice(0, 40), rows = [];
+    for (let i = 0; i < bytes.length; i += 8) {
+        const chunk = [...bytes.slice(i, i + 8)];
+        rows.push(`${i.toString(16).padStart(4, '0')}  ${chunk.map(b => b.toString(16).padStart(2, '0')).join(' ').padEnd(23)}  ${chunk.map(b => (b > 31 && b < 127 ? String.fromCharCode(b) : '.')).join('')}`);
+    }
+    return rows;
+})();
+
+const MORSE = {
+    A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--',
+    N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..',
+};
+const MORSE_TEXT = 'HAPPY BIRTHDAY';
+
+const Terminal = () => {
+    const [lines, setLines]     = useState([]);
+    const [payload, setPayload] = useState(null);
+    const [status, setStatus]   = useState('idle');
+    const runId = useRef(0), bodyRef = useRef(null);
+
+    const [playing, setPlaying] = useState(false);
+    const [led, setLed]         = useState(false);
+    const [sym, setSym]         = useState('');
+    const [decoded, setDecoded] = useState('');
+    const [sound, setSound]     = useState(true);
+    const morseId = useRef(0);
+
+    useEffect(() => () => { runId.current++; morseId.current++; }, []);
+    useEffect(() => { const b = bodyRef.current; if (b) b.scrollTop = b.scrollHeight; }, [lines, payload]);
+
+    const run = async () => {
+        const id = ++runId.current, alive = () => runId.current === id;
+        setLines([]); setPayload(null); setStatus('running');
+        for (const l of POST) { await sleep(REDUCED ? 0 : l.d); if (!alive()) return; setLines(p => [...p, l]); }
+        for (const row of HEX) { await sleep(REDUCED ? 0 : 90); if (!alive()) return; setLines(p => [...p, { t: row, c: 'text-dim' }]); }
+        await sleep(REDUCED ? 0 : 350); if (!alive()) return;
+        setLines(p => [...p, { tag: 'OK', t: 'CRC-32 match. Decoding payload.' }]);
+        await sleep(REDUCED ? 0 : 400);
+        if (REDUCED) { setPayload(CFG.message); setStatus('done'); return; }
+        for (let i = 1; i <= CFG.message.length; i++) {
+            if (!alive()) return;
+            setPayload(CFG.message.slice(0, i));
+            await sleep(CFG.message[i - 1] === '\n' ? 140 : 17);
+        }
+        setStatus('done');
+    };
+
+    const playMorse = async () => {
+        if (playing) { morseId.current++; setPlaying(false); setLed(false); setSym(''); return; }
+        const id = ++morseId.current, alive = () => morseId.current === id;
+        setPlaying(true); setDecoded(''); setSym('');
+        let ac = null, gain = null;
+        if (sound) {
+            try {
+                ac = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ac.createOscillator(); gain = ac.createGain();
+                osc.type = 'sine'; osc.frequency.value = 660; gain.gain.value = 0;
+                osc.connect(gain).connect(ac.destination); osc.start();
+            } catch { ac = null; gain = null; }
+        }
+        const tone = on => { setLed(on); if (gain) gain.gain.setTargetAtTime(on ? .05 : 0, ac.currentTime, .004); };
+        const U = 60;
+        try {
+            for (const word of MORSE_TEXT.split(' ')) {
+                for (const ch of word) {
+                    for (const s of MORSE[ch]) {
+                        if (!alive()) return;
+                        tone(true); setSym(v => v + s);
+                        await sleep(s === '.' ? U : 3 * U);
+                        tone(false); await sleep(U);
+                    }
+                    if (!alive()) return;
+                    setDecoded(d => d + ch); setSym('');
+                    await sleep(2 * U);
+                }
+                setDecoded(d => d + ' ');
+                await sleep(4 * U);
+            }
+        } finally {
+            if (gain) gain.gain.value = 0;
+            if (ac) setTimeout(() => ac.close(), 100);
+            if (alive()) { setPlaying(false); setLed(false); }
+        }
+    };
+
+    return (
+        <section className="px-5 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
+            <SectionHead title="An incoming packet">
+                Run the self-test to boot the receiver. It will decode the frame that's been waiting on the line for you.
+            </SectionHead>
+
+            <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+                <div className="rounded-[14px] border border-edge bg-[#070A10] overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-edge font-mono text-[11px] text-dim">
+                        <span className="flex items-center gap-2"><Led on={status === 'running'} color="#00F2FE" size={6} />ttyRX0</span>
+                        <span>115200 baud, 8N1</span>
+                    </div>
+                    <div ref={bodyRef} className="h-[360px] sm:h-[420px] overflow-y-auto px-4 sm:px-5 py-4 font-mono text-[12px] sm:text-[13px] leading-[1.7]">
+                        {status === 'idle' && <p className="text-dim">Receiver is idle. Press <span className="text-muted">Run self-test</span> to power it up.<span className="caret" /></p>}
+                        {lines.map((l, i) => (
+                            <div key={i} className={`whitespace-pre-wrap break-words ${l.c || 'text-muted'}`} style={{ minHeight: l.t ? undefined : '.8em' }}>
+                                {l.tag && <span className={l.tag === 'OK' ? 'text-phosphor' : 'text-amber'}>[{l.tag === 'OK' ? ' OK ' : 'WARN'}] </span>}
+                                {l.t}
+                            </div>
+                        ))}
+                        {payload !== null && (
+                            <div className="mt-5 mb-2 pl-4 border-l-2 border-neon/40">
+                                <p className={`font-sans text-[15px] sm:text-base text-ink leading-[1.75] whitespace-pre-wrap ${status === 'running' ? 'caret' : ''}`}>{payload}</p>
+                                {status === 'done' && <p className="mt-4 font-serif italic text-xl text-copper">{CFG.from}</p>}
+                            </div>
+                        )}
+                        {status === 'running' && payload === null && <span className="caret" />}
+                    </div>
+                    <div className="px-4 sm:px-5 py-3 border-t border-edge flex items-center gap-3">
+                        <Btn onClick={run} disabled={status === 'running'}>{status === 'done' ? 'Run self-test again' : 'Run self-test'}</Btn>
+                        <span className="text-[13px] text-dim">
+                            {status === 'running' ? 'Booting…' : status === 'done' ? '1 frame decoded' : ''}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="rounded-[14px] border border-edge bg-panel p-5 flex flex-col">
+                    <h3 className="text-ink font-medium">Morse channel</h3>
+                    <p className="text-[13px] text-muted mt-1 leading-relaxed">A second transmission, keyed on an LED at 20 words per minute.</p>
+                    <div className="my-6 flex items-center gap-5">
+                        <span className="relative w-14 h-14 rounded-full border border-edge bg-black grid place-items-center">
+                            <span className="w-8 h-8 rounded-full transition-[background,box-shadow] duration-75"
+                                  style={{ background: led ? '#FF4D9D' : '#2a0d1b', boxShadow: led ? '0 0 18px #FF007F, 0 0 40px rgba(255,0,127,.5)' : 'none' }} />
+                        </span>
+                        <span className="font-mono text-2xl text-laser tracking-[.2em] min-h-[1.5em]" aria-hidden="true">{sym}</span>
+                    </div>
+                    <div className="font-mono text-[13px] text-dim">Decoded</div>
+                    <div className="font-mono text-lg text-ink tracking-[.12em] min-h-[1.6em] break-all" aria-live="polite">{decoded || <span className="text-dim">…</span>}</div>
+                    <div className="mt-auto pt-6 flex items-center justify-between gap-3">
+                        <Btn tone="copper" onClick={playMorse}>{playing ? 'Stop' : 'Play in Morse'}</Btn>
+                        <label className="flex items-center gap-2 text-[13px] text-muted cursor-pointer">
+                            <input type="checkbox" checked={sound} onChange={e => setSound(e.target.checked)} className="accent-[#D4AF37]" />
+                            Sound
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   Reasons: his age spelled on a 5×7 LED matrix,
+   one reason behind every dot
+   ═════════════════════════════════════════════ */
+const FONT5x7 = {
+    0: ['.###.', '#...#', '#..##', '#.#.#', '##..#', '#...#', '.###.'],
+    1: ['..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+    2: ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'],
+    3: ['####.', '....#', '....#', '.###.', '....#', '....#', '####.'],
+    4: ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'],
+    5: ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
+    6: ['..##.', '.#...', '#....', '####.', '#...#', '#...#', '.###.'],
+    7: ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
+    8: ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
+    9: ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
+};
+const DIGIT_COLORS = ['#FF5FA2', '#00F2FE'];
+
+const Reasons = () => {
+    const digits = String(CFG.age).split('');
+    /* number the dots in reading order, digit by digit */
+    let n = 0;
+    const grids = digits.map(d => FONT5x7[d].map(row => [...row].map(c => (c === '#' ? n++ : null))));
+    const total = n;
+    const [lit, setLit] = useState(() => new Set());
+    const [current, setCurrent] = useState(null);
+    const doneRef = useRef(false), panelRef = useRef(null);
+    const allLit = lit.size === total;
+
+    const light = (i, e) => {
+        setCurrent(i);
+        if (lit.has(i)) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        burst({ x: r.left + r.width / 2, y: r.top + r.height / 2, n: 8, kind: 'spark' });
+        setLit(prev => new Set(prev).add(i));
+    };
+    useEffect(() => {
+        if (allLit && !doneRef.current) {
+            doneRef.current = true;
+            const r = panelRef.current.getBoundingClientRect();
+            setTimeout(() => burst({ x: r.left + r.width / 2, y: r.top + r.height / 2, n: 110 }), 250);
+        }
+    }, [allLit]);
+    const reset = () => { setLit(new Set()); setCurrent(null); doneRef.current = false; };
+    const reason = i => CFG.reasons[i % CFG.reasons.length];
+
+    return (
+        <section className="px-5 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
+            <SectionHead title={`${total} reasons, in lights`}>
+                Every LED holds one reason you matter. Tap them in any order and light up all {total}.
+            </SectionHead>
+
+            <div className="grid lg:grid-cols-[auto_1fr] gap-6 items-stretch">
+                <div ref={panelRef} className="relative rounded-[18px] border border-copper/25 bg-[#0D1320] overflow-hidden p-5 sm:p-8 flex justify-center">
+                    <div className="absolute inset-0 bg-board opacity-60 pointer-events-none" />
+                    <div className={`relative flex gap-4 sm:gap-7 transition-[filter] duration-700 ${allLit ? '[filter:drop-shadow(0_0_18px_rgba(255,95,162,.35))]' : ''}`}>
+                        {grids.map((grid, g) => (
+                            <div key={g} className="grid grid-cols-5 gap-1.5 sm:gap-2.5">
+                                {grid.flat().map((idx, k) => idx === null ? (
+                                    <span key={k} className="w-[26px] h-[26px] sm:w-9 sm:h-9 grid place-items-center" aria-hidden="true">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white/[.06]" />
+                                    </span>
+                                ) : (
+                                    <button key={k} onClick={e => light(idx, e)}
+                                            aria-label={`Reason ${idx + 1}${lit.has(idx) ? ', lit' : ''}`} aria-pressed={lit.has(idx)}
+                                            className="w-[26px] h-[26px] sm:w-9 sm:h-9 grid place-items-center rounded-full group">
+                                        <span className="w-full h-full rounded-full border transition-all duration-300 group-hover:scale-110"
+                                              style={lit.has(idx)
+                                                  ? { background: `radial-gradient(circle at 35% 30%, #fff 0 12%, ${DIGIT_COLORS[g % 2]} 40%)`, borderColor: DIGIT_COLORS[g % 2],
+                                                      boxShadow: `0 0 12px ${DIGIT_COLORS[g % 2]}, 0 0 26px ${DIGIT_COLORS[g % 2]}66`,
+                                                      outline: current === idx ? '2px solid #E6EAF0' : 'none', outlineOffset: 3 }
+                                                  : { background: '#0b0f16', borderColor: '#3a4863', boxShadow: 'inset 0 0 6px rgba(255,255,255,.04)' }} />
+                                    </button>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="rounded-[18px] border border-edge bg-panel p-6 sm:p-8 flex flex-col min-h-[220px]">
+                    <div className="flex items-center justify-between text-[13px] text-muted">
+                        <span>{lit.size} of {total} lit</span>
+                        <span className="flex-1 mx-4 h-1 rounded-full bg-edge overflow-hidden">
+                            <span className="block h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${lit.size / total * 100}%`, background: 'linear-gradient(90deg, #FF5FA2, #00F2FE)' }} />
+                        </span>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center py-6" aria-live="polite">
+                        {allLit && current === null ? null : current === null ? (
+                            <p className="text-muted text-lg">Pick any LED to start.</p>
+                        ) : (
+                            <div key={current}>
+                                <div className="font-mono text-xs text-dim mb-2">Reason {current + 1}</div>
+                                <p className="font-serif italic text-2xl sm:text-3xl text-ink leading-snug">{reason(current)}</p>
+                            </div>
+                        )}
+                        {allLit && (
+                            <p className="mt-6 text-ink">
+                                All {total} lit. That's you, {CFG.nick}: bright all the way through. <span className="text-[#FF5FA2]">♥</span>
+                            </p>
+                        )}
+                    </div>
+                    {allLit && <Btn tone="quiet" onClick={reset} className="self-start">Switch them all off</Btn>}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   4  Kill the power: breaker + LED cake
+   ═════════════════════════════════════════════ */
+const CANDLES_X = [156, 200, 244];
+
+const Cake = ({ lit, onSnuff, active, party }) => (
+    <svg viewBox="0 0 400 350" className="w-full max-w-[420px] h-auto mx-auto block" role="group" aria-label="Circuit cake">
+        <defs>
+            <radialGradient id="flameGlow"><stop offset="0" stopColor="#FFD27A" stopOpacity=".95" /><stop offset=".35" stopColor="#F59E0B" stopOpacity=".45" /><stop offset="1" stopColor="#F59E0B" stopOpacity="0" /></radialGradient>
+            <linearGradient id="resBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#e8d9b5" /><stop offset="1" stopColor="#bda77a" /></linearGradient>
+        </defs>
+        {/* board plate */}
+        <rect x="30" y="318" width="340" height="12" rx="3" fill="#123a2c" stroke="#D4AF37" strokeOpacity=".5" />
+        {/* bottom tier: the age resistor */}
+        <line x1="8" y1="284" x2="392" y2="284" stroke="#aab3be" strokeWidth="4" strokeLinecap="round" />
+        <rect x="62" y="250" width="276" height="68" rx="32" fill="url(#resBody)" />
+        {AGE_BANDS.map(([, c], i) => <rect key={i} x={112 + i * 40} y="250" width="16" height="68" fill={c} />)}
+        <rect x="266" y="250" width="16" height="68" fill="#D4AF37" />
+        {/* middle tier: board with fairy LEDs */}
+        <rect x="104" y="188" width="192" height="62" rx="8" fill="#171e2b" stroke="#2c3546" />
+        {Array.from({ length: 9 }, (_, i) => (
+            <circle key={i} cx={122 + i * 19.5} cy="219" r="3.5" className={active ? 'twinkle' : ''}
+                    fill={['#00F2FE', '#FF007F', '#10B981'][i % 3]}
+                    style={{ animationDelay: `${-i * .27}s`, opacity: active ? undefined : .25, filter: party ? `drop-shadow(0 0 5px ${['#00F2FE', '#FF007F', '#10B981'][i % 3]})` : 'none' }} />
+        ))}
+        {/* top tier: the chip */}
+        <g fill="#D4AF37" fillOpacity=".8">
+            {[0, 1, 2, 3].map(i => <g key={i}><rect x="138" y={140 + i * 12} width="8" height="4" /><rect x="254" y={140 + i * 12} width="8" height="4" /></g>)}
+        </g>
+        <rect x="146" y="132" width="108" height="56" rx="4" fill="#121822" stroke="#2c3546" />
+        <text x="200" y="166" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="14" fill="#8391A7">v{CFG.age}.0</text>
+        {/* LED candles */}
+        {CANDLES_X.map((x, i) => {
+            const on = lit[i];
+            return (
+                <g key={i} className="part" role="button" tabIndex={active ? 0 : -1}
+                   aria-label={`LED candle ${i + 1}, ${on ? 'lit. Press to switch it off' : 'off'}`}
+                   onClick={e => active && on && onSnuff(i, e)}
+                   onKeyDown={e => { if (active && on && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onSnuff(i, e); } }}>
+                    {/* visuals ignore the pointer; only the hit area below takes taps */}
+                    <g pointerEvents="none">
+                    <circle cx={x} cy="80" r="34" fill="url(#flameGlow)" className={on ? 'flicker' : ''}
+                            style={{ opacity: on ? 1 : 0, transition: 'opacity .35s', animationDelay: `${-i * .5}s` }} />
+                    <line x1={x - 4} y1="100" x2={x - 4} y2="132" stroke="#aab3be" strokeWidth="2" />
+                    <line x1={x + 4} y1="100" x2={x + 4} y2="132" stroke="#aab3be" strokeWidth="2" />
+                    <path d={`M${x - 11} 102 V78 A11 11 0 0 1 ${x + 11} 78 V102 Z`}
+                          fill={on ? '#F59E0B' : 'rgba(245,158,11,.1)'} stroke={on ? '#FFD27A' : 'rgba(245,158,11,.4)'}
+                          style={{ transition: 'fill .3s' }} />
+                    <rect x={x - 13} y="100" width="26" height="4" rx="1" fill={on ? '#E08A00' : 'rgba(245,158,11,.25)'} />
+                    {on && <ellipse cx={x - 4} cy="80" rx="3" ry="6" fill="#fff" opacity=".6" />}
+                    </g>
+                    {/* non-overlapping tap target: 40 wide, candles are 44 apart */}
+                    <rect x={x - 20} y="36" width="40" height="96" fill="transparent" pointerEvents="all" />
+                </g>
+            );
+        })}
+    </svg>
+);
+
+const PowerDown = () => {
+    const [mode, setMode] = useState('on');        // on | dark | party
+    const [lit, setLit]   = useState([true, true, true]);
+    const stageRef = useRef(null), timers = useRef([]);
+    useEffect(() => () => timers.current.forEach(clearTimeout), []);
+    const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
+
+    const toBreakerOff = () => {
+        setLit([true, true, true]); setMode('dark');
+        later(() => stageRef.current?.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' }), 60);
+    };
+    const flip = () => (mode === 'dark' ? setMode('on') : mode === 'on' ? toBreakerOff() : setMode('on'));
+
+    const celebrate = () => {
+        setMode('party');
+        const r = stageRef.current.getBoundingClientRect();
+        const cy = r.top + r.height * .4;
+        [[.5, 0], [.2, 280], [.8, 520], [.35, 820], [.65, 1050]].forEach(([fx, ms]) =>
+            later(() => burst({ x: innerWidth * fx, y: cy, n: 80 }), ms));
+    };
+    const snuff = (i, e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        burst({ x: r.left + r.width / 2, y: r.top + r.height * .3, n: 18, kind: 'spark' });
+        setLit(prev => {
+            if (!prev[i]) return prev;
+            const next = prev.map((v, j) => (j === i ? false : v));
+            if (next.every(v => !v)) later(celebrate, 650);
+            return next;
+        });
+    };
+
+    const powered = mode !== 'dark';
+    const left = lit.filter(Boolean).length;
+
+    return (
+        <section className="relative z-30 px-5 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
+            {/* whole-page blackout; lives inside this stacking context so the stage stays above it */}
+            {mode === 'dark' && <div className="fixed inset-0 bg-[#020306] brownout pointer-events-none" aria-hidden="true" />}
+            {mode === 'party' && (
+                <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+                    <div className="sweep absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-neon/10 to-transparent" />
+                </div>
+            )}
+
+            <div className="relative">
+                <SectionHead title="Kill the power">
+                    Throw the main breaker. Something's waiting on the bench, and it only shows up in the dark.
+                </SectionHead>
+
+                <div className="grid md:grid-cols-[180px_1fr] gap-6 items-stretch">
+                    {/* breaker */}
+                    <div className="rounded-[14px] border border-edge bg-panel p-5 flex md:flex-col items-center gap-5 md:gap-4 md:self-start">
+                        <button role="switch" aria-checked={powered} aria-label="Main breaker" onClick={flip}
+                                className="relative w-[76px] h-[150px] rounded-xl bg-gradient-to-b from-[#1c2331] to-[#0f141c] border border-[#2c3546] shrink-0">
+                            <span className="absolute left-1/2 -translate-x-1/2 top-4 bottom-4 w-3 rounded-full bg-black/70" />
+                            <span className={`absolute left-1/2 -translate-x-1/2 w-12 h-14 rounded-lg border border-black/40
+                                              transition-all duration-500 ease-[cubic-bezier(.34,1.56,.64,1)] shadow-[0_6px_14px_rgba(0,0,0,.6)]
+                                              ${powered ? 'top-3 bg-gradient-to-b from-[#e9edf3] to-[#aab3be]' : 'top-[83px] bg-gradient-to-b from-[#ef5a5a] to-[#a61e1e]'}`} />
+                        </button>
+                        <div className="md:text-center">
+                            <div className="flex md:justify-center items-center gap-2 text-ink font-medium">
+                                <Led on color={powered ? '#10B981' : '#ef4444'} />{powered ? 'Power on' : 'Power off'}
+                            </div>
+                            <div className="font-mono text-[11px] text-dim mt-1">Main, {CFG.age} A</div>
+                            <p className="text-[13px] text-muted mt-2 leading-snug">
+                                {mode === 'on' ? 'Tap the switch to cut the mains.' : mode === 'dark' ? 'Tap again to bring the lights back.' : 'Power restored.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* stage */}
+                    <div ref={stageRef} className={`relative rounded-[14px] border overflow-hidden min-h-[400px] flex flex-col items-center justify-center px-5 py-8 transition-colors duration-700
+                                    ${mode === 'dark' ? 'border-amber/20 bg-[#05070b]' : 'border-edge bg-panel/60'}`}>
+                        {mode === 'party' && (
+                            <div className="absolute inset-0 grid place-items-center pointer-events-none" aria-hidden="true">
+                                {['#00F2FE', '#FF007F', '#10B981'].map((c, i) => (
+                                    <span key={c} className="ring absolute w-64 h-64 rounded-full border-2" style={{ borderColor: c, animationDelay: `${i * .8}s` }} />
+                                ))}
+                            </div>
+                        )}
+
+                        <div className={`relative w-full transition-opacity duration-700 ${mode === 'on' ? 'opacity-[.07]' : 'opacity-100'}`}>
+                            <Cake lit={lit} onSnuff={snuff} active={mode === 'dark'} party={mode === 'party'} />
+                        </div>
+
+                        <div className="relative mt-6 text-center min-h-[92px]" aria-live="polite">
+                            {mode === 'on' && <p className="text-muted">Nothing to see with the lights on.</p>}
+                            {mode === 'dark' && (
+                                <>
+                                    <p className="text-ink text-lg">Make a wish, then tap each LED to switch it off.</p>
+                                    <p className="font-mono text-xs text-dim mt-2">{left} of 3 still lit</p>
+                                </>
+                            )}
+                            {mode === 'party' && (
+                                <>
+                                    <p className="font-serif italic text-4xl sm:text-5xl text-ink leading-tight">Wish logged, {CFG.nick}.</p>
+                                    <p className="text-muted mt-2">Here's to year {CFG.age}. May it run cool, fast and bug-free.</p>
+                                    <Btn tone="quiet" onClick={toBreakerOff} className="mt-4">Light the candles again</Btn>
+                                </>
+                            )}
+                        </div>
+
+                        {mode === 'party' && (
+                            <div className="absolute bottom-0 inset-x-0 flex justify-between px-3 pb-3" aria-hidden="true">
+                                {Array.from({ length: 24 }, (_, i) => {
+                                    const c = ['#00F2FE', '#FF007F', '#10B981', '#F59E0B'][i % 4];
+                                    return <span key={i} className="chase w-1.5 h-1.5 rounded-full" style={{ background: c, boxShadow: `0 0 8px ${c}`, animationDelay: `${i * .05}s` }} />;
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   App
+   ═════════════════════════════════════════════ */
+const App = () => (
+    <>
+        <Confetti />
+        <div className="fixed inset-0 bg-board pointer-events-none" aria-hidden="true" />
+        <div className="fixed inset-0 bg-glow pointer-events-none" aria-hidden="true" />
+        <main className="relative">
+            <GiftIntro />
+            <Hero />
+            <Board />
+            <Terminal />
+            <Reasons />
+            <PowerDown />
+            <footer className="px-5 sm:px-8 py-14 max-w-6xl mx-auto border-t border-edge/60 flex flex-wrap justify-between gap-3 text-[13px] text-dim">
+                <span>Made for {CFG.name} with love and low impedance.</span>
+                <span className="font-mono text-xs">KD-BDAY-PCB rev {CFG.age}.0</span>
+            </footer>
+        </main>
+    </>
+);
+
+/* always start at the wrapped present, even on refresh */
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+scrollTo(0, 0);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
