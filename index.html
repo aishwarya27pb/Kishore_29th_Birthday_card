@@ -175,7 +175,7 @@
         @media (prefers-reduced-motion: reduce) { .hint-bob, .hint-pill, .knob-glow { animation: none; } }
 
         /* Gift intro */
-        .gift-stage { --w: clamp(200px, min(64vw, calc((88vh - 140px) / 1.21)), 620px); }
+        .gift-stage { --w: clamp(200px, min(64vw, calc((80vh - 140px) / 1.11)), 620px); }
         .gift-paper {
             background-color: #141b29;
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84'><g fill='none' stroke='%23D4AF37' stroke-opacity='.32' stroke-width='1.6' stroke-linejoin='round'><path d='M0 22 H30 L40 32 H84'/><path d='M22 0 V14 L30 22'/><path d='M62 84 V58 L52 48 H38'/><path d='M84 70 H70 L62 62'/></g><g fill='%23D4AF37' fill-opacity='.55'><circle cx='30' cy='22' r='2.6'/><circle cx='38' cy='48' r='2.6'/><circle cx='62' cy='62' r='2.6'/></g></svg>");
@@ -588,13 +588,13 @@ const GiftIntro = () => {
 
     return (
         <section ref={wrap} className="relative h-[300vh]" aria-label={`A present for ${CFG.nick}`}>
-            <div className="sticky top-0 h-screen overflow-hidden flex flex-col items-center justify-center gap-[2.5vh] px-5 pb-[84px]">
+            <div className="sticky top-0 h-screen overflow-hidden flex flex-col items-center justify-center gap-[2.5vh] px-5 pt-[8vh] pb-[84px]">
                 <div ref={intro} className="relative z-10 text-center">
                     <p className="font-serif italic text-ink leading-none" style={{ fontSize: 'clamp(2.6rem, min(9vw, 7.5vh), 5rem)' }}>For you, {CFG.nick}.</p>
                     <p className="mt-[1.4vh] text-muted text-base sm:text-lg">Something small, wrapped with a lot of love.</p>
                 </div>
 
-                <div ref={stage} className="gift-stage relative shrink-0" style={{ width: 'var(--w)', height: 'calc(var(--w) * .98)', marginTop: 'calc(var(--w) * .22)' }}>
+                <div ref={stage} className="gift-stage relative shrink-0" style={{ width: 'var(--w)', height: 'calc(var(--w) * .98)', marginTop: 'calc(var(--w) * .13)' }}>
                     {/* light from inside */}
                     <div ref={glow} className="absolute left-1/2 top-[30%] w-[260%] aspect-square rounded-full pointer-events-none opacity-0"
                          style={{ background: 'radial-gradient(circle, rgba(255,210,122,.55), rgba(255,95,162,.18) 35%, transparent 65%)' }} />
