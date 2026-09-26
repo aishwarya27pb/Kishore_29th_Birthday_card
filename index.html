@@ -197,6 +197,58 @@
         .cur-down .cur-ring > i { transform: scale(.7) rotate(45deg); }
         .cur-hidden .cur-dot, .cur-hidden .cur-ring { opacity: 0; }
 
+        /* Trail pointer */
+        /* no z-index: painted before <main>, so the trail runs behind every panel and only shows on the page background */
+        .trail-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+        .trail-head { position: fixed; left: 0; top: 0; width: 18px; height: 18px; margin: -9px 0 0 -9px; pointer-events: none; z-index: 80;
+                      border-radius: 50%; border: 1.5px solid rgba(0,242,254,.7); will-change: transform; transition: border-color .2s, width .2s, height .2s, margin .2s; }
+        .trail-head::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+                             background: #00F2FE; box-shadow: 0 0 10px #00F2FE; transition: background .2s, box-shadow .2s; }
+        .cur-hover .trail-head { width: 28px; height: 28px; margin: -14px 0 0 -14px; border-color: rgba(255,95,162,.9); }
+        .cur-hover .trail-head::after { background: #FF5FA2; box-shadow: 0 0 10px #FF5FA2; }
+        .cur-hidden .trail-head { opacity: 0; }
+
+        /* Soldering-iron pointer */
+        .iron { position: fixed; left: 0; top: 0; width: 64px; height: 64px; margin: -3px 0 0 -3px; pointer-events: none; z-index: 80; will-change: transform; }
+        .iron .tip-glow { transform-box: fill-box; transform-origin: center; animation: flicker 1.1s ease-in-out infinite; transition: opacity .2s; opacity: .75; }
+        .cur-hover .iron .tip-glow { opacity: 1; }
+        .cur-hover .iron .tip-glow-big { opacity: 1; }
+        .iron .tip-glow-big { opacity: 0; transition: opacity .2s; }
+        .cur-down .iron { transform-origin: 3px 3px; }
+        .cur-hidden .iron { opacity: 0; }
+        .solder-blob { position: fixed; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%; pointer-events: none; z-index: 78;
+                       background: radial-gradient(circle at 35% 30%, #fff, #c9ced6 38%, #6b7280 100%);
+                       box-shadow: 0 0 6px rgba(255,170,80,.9); animation: blob 1.8s ease-out forwards; }
+        @keyframes blob { 0% { transform: scale(.2); box-shadow: 0 0 10px rgba(255,150,60,1); } 14% { transform: scale(1.15); } 26% { transform: scale(1); }
+                          45% { box-shadow: 0 0 0 rgba(255,150,60,0); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(.9); } }
+        .smoke { position: fixed; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; pointer-events: none; z-index: 78;
+                 background: rgba(210,218,228,.55); filter: blur(2px); animation: smoke 1.3s ease-out forwards; }
+        @keyframes smoke { to { transform: translate(var(--sx), -46px) scale(2.4); opacity: 0; } }
+
+        /* RGB LED pointer */
+        .led-cur { position: fixed; left: 0; top: 0; width: 24px; height: 40px; margin: -13px 0 0 -12px; pointer-events: none; z-index: 80;
+                   --c: hsl(185 100% 58%); will-change: transform; }
+        .led-cur > .halo { position: absolute; left: 50%; top: 13px; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+                           background: radial-gradient(circle, var(--c) 0%, transparent 70%); opacity: .55; transition: opacity .2s, transform .25s; }
+        .led-cur > svg { position: relative; transition: transform .25s cubic-bezier(.34,1.56,.64,1); transform-origin: 12px 13px; }
+        .cur-hover .led-cur > svg { transform: scale(1.25); }
+        .cur-hover .led-cur > .halo { opacity: .9; transform: scale(1.35); }
+        .led-flash > .halo { animation: ledFlash .45s ease-out; }
+        @keyframes ledFlash { 0% { background: radial-gradient(circle, #fff 0%, transparent 70%); transform: scale(2.2); opacity: 1; } }
+        .cur-hidden .led-cur { opacity: 0; }
+
+        /* Fist punch finale */
+        .fist { position: absolute; top: 50%; font-size: clamp(56px, 9vw, 96px); line-height: 1; transform: translateY(-50%);
+                transition: left .55s cubic-bezier(.55,0,.8,.2), right .55s cubic-bezier(.55,0,.8,.2); filter: drop-shadow(0 10px 18px rgba(0,0,0,.6)); }
+        .bump-shake { animation: bshake .4s ease-out; }
+        @keyframes bshake { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+        .impact { position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%;
+                  border: 3px solid #FFD27A; animation: impact .8s ease-out forwards; pointer-events: none; }
+        @keyframes impact { from { transform: scale(.2); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
+        .keycap { transition: transform .08s, background .15s, box-shadow .15s; box-shadow: inset 0 -3px 0 rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.35); }
+        .keycap:active { transform: translateY(2px); box-shadow: inset 0 -1px 0 rgba(0,0,0,.45); }
+        @media (prefers-reduced-motion: reduce) { .fist { transition: none; } .bump-shake, .impact { animation: none; } }
+
         /* Gift intro */
         .gift-stage { --w: clamp(200px, min(64vw, calc((80vh - 140px) / 1.11)), 620px); }
         .gift-paper {
@@ -241,6 +293,11 @@ const CFG = {
     age:       29,                /* EDIT: age he's turning (10–99 for the resistor bands) */
     birthYear: 1997,              /* EDIT: birth year                     */
     from:      "Aishu",           /* EDIT: who it's from                  */
+    signature: "Aishu...",        /* EDIT: how the message is signed      */
+    cursor:    "trail",           /* EDIT: mouse pointer style: trail | probe | solder | led */
+    /* EDIT: the number game. Set a special number 1–99, or null for a new random number each round */
+    guessNumber: null,
+    guessWin: "You found it!",
     /* EDIT: the personal message decoded in the terminal */
     message: `Kishore,
 
@@ -411,6 +468,21 @@ const Sfx = (() => {
             const c = ready(); if (!c) return; const t = c.currentTime;
             if (step < SONG.length) { box(c, t, SONG[step][0]); return; }
             [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => box(c, t + i * .09, f, .1, 1.4));   /* bonus sparkle after the song */
+        },
+        /* number game: rising blip = go higher, falling blip = go lower */
+        beep(higher) {
+            const c = ready(); if (!c) return; const t = c.currentTime;
+            const [a, b] = higher ? [523.25, 783.99] : [783.99, 523.25];
+            tone(c, t, a, .07, .12, 'triangle'); tone(c, t + .1, b, .07, .16, 'triangle');
+        },
+        /* found it / fist punch: a bright music-box flourish */
+        win() {
+            const c = ready(); if (!c) return; const t = c.currentTime;
+            [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => box(c, t + i * .08, f, .12, 1.4));
+        },
+        bump() {
+            const c = ready(); if (!c) return; const t = c.currentTime;
+            box(c, t, 392, .16, 1.2); box(c, t, 587.33, .12, 1.2); box(c, t + .12, 783.99, .1, 1.4); box(c, t + .24, 1174.7, .07, 1.6);
         },
         /* the whole song on the music box */
         song() {
@@ -1073,7 +1145,7 @@ const Hero = () => {
 /* ═════════════════════════════════════════════
    2  Main board
    ═════════════════════════════════════════════ */
-const SEG = { 0: 'abcdef', 1: 'bc', 2: 'abdeg', 3: 'abcdg', 4: 'bcfg', 5: 'acdfg', 6: 'acdefg', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg' };
+const SEG = { ' ': '', '-': 'g', 0: 'abcdef', 1: 'bc', 2: 'abdeg', 3: 'abcdg', 4: 'bcfg', 5: 'acdfg', 6: 'acdefg', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg' };
 const SEG_RECTS = {
     a: [9, 2, 22, 6], b: [32, 9, 6, 24], c: [32, 37, 6, 24], d: [9, 62, 22, 6],
     e: [2, 37, 6, 24], f: [2, 9, 6, 24], g: [9, 32, 22, 6],
@@ -1487,8 +1559,9 @@ const HEX = (() => {
 const MORSE = {
     A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--',
     N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..',
+    '!': '-.-.--',
 };
-const MORSE_TEXT = 'HAPPY BIRTHDAY';
+const MORSE_TEXT = `HAPPY BIRTHDAY ${CFG.nick.toUpperCase()}!`;
 
 const Terminal = () => {
     const [lines, setLines]     = useState([]);
@@ -1571,7 +1644,7 @@ const Terminal = () => {
                 Run the self-test to boot the receiver. It will decode the frame that's been waiting on the line for you.
             </SectionHead>
 
-            <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+            <div className="grid lg:grid-cols-[1fr_300px] gap-4 min-[1360px]:-mx-20">
                 <div className="rounded-[14px] border border-edge bg-[#070A10] overflow-hidden flex flex-col">
                     <div className="flex items-center justify-between px-4 py-2.5 border-b border-edge font-mono text-[11px] text-dim">
                         <span className="flex items-center gap-2"><Led on={status === 'running'} color="#00F2FE" size={6} />ttyRX0</span>
@@ -1588,7 +1661,7 @@ const Terminal = () => {
                         {payload !== null && (
                             <div className="mt-5 mb-2 pl-4 border-l-2 border-neon/40">
                                 <p className={`font-sans text-[15px] sm:text-base text-ink leading-[1.75] whitespace-pre-wrap ${status === 'running' ? 'caret' : ''}`}>{payload}</p>
-                                {status === 'done' && <p className="mt-4 font-serif italic text-xl text-copper">{CFG.from}</p>}
+                                {status === 'done' && <p className="mt-4 font-serif italic text-xl text-copper">{CFG.signature}</p>}
                             </div>
                         )}
                         {status === 'running' && payload === null && <span className="caret" />}
@@ -1615,7 +1688,7 @@ const Terminal = () => {
                         <span className="font-mono text-2xl text-laser tracking-[.2em] min-h-[1.5em]" aria-hidden="true">{sym}</span>
                     </div>
                     <div className="font-mono text-[13px] text-dim">Decoded</div>
-                    <div className="font-mono text-lg text-ink tracking-[.12em] min-h-[1.6em] break-all" aria-live="polite">{decoded || <span className="text-dim">…</span>}</div>
+                    <div className="font-mono text-lg text-ink tracking-[.12em] min-h-[1.6em] break-words" aria-live="polite">{decoded || <span className="text-dim">…</span>}</div>
                     <div className="mt-auto pt-6 flex items-center justify-between gap-3">
                         <span className="relative">
                             <Btn tone="copper" onClick={() => { setMorseTried(true); playMorse(); }}>{playing ? 'Stop' : 'Play in Morse'}</Btn>
@@ -1740,6 +1813,186 @@ const Reasons = () => {
                         )}
                     </div>
                     {allLit && <Btn tone="quiet" onClick={reset} className="self-start">Switch them all off</Btn>}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   Guess my number: our game, board edition
+   ═════════════════════════════════════════════ */
+const pickNumber = () => CFG.guessNumber || 1 + Math.floor(Math.random() * 99);
+
+const GuessGame = () => {
+    const [target, setTarget]   = useState(pickNumber);
+    const [entry, setEntry]     = useState('');
+    const [history, setHistory] = useState([]);
+    const [won, setWon]         = useState(false);
+    const entryRef = useRef(''), sectionRef = useRef(null), panelRef = useRef(null), visible = useRef(false);
+    entryRef.current = entry;
+    const last = history[history.length - 1];
+    const dir = last?.dir;
+
+    const submit = () => {
+        const n = parseInt(entryRef.current, 10);
+        if (!n || n < 1 || n > 99 || won) return;
+        setEntry('');
+        if (n === target) {
+            setHistory(h => [...h, { n, dir: 'hit' }]); setWon(true); Sfx.win();
+            const r = panelRef.current.getBoundingClientRect();
+            burst({ x: r.left + r.width / 2, y: r.top + r.height / 3, n: 90 });
+        } else {
+            const d = n < target ? 'up' : 'down';
+            setHistory(h => [...h, { n, dir: d }]); Sfx.beep(d === 'up');
+        }
+    };
+    const press = k => {
+        if (won) return;
+        if (k === 'del') setEntry(e => e.slice(0, -1));
+        else if (k === 'go') submit();
+        else setEntry(e => (e + k).replace(/^0+/, '').slice(0, 2));
+    };
+    const again = () => { setTarget(pickNumber()); setHistory([]); setEntry(''); setWon(false); };
+
+    /* keyboard works too, while this section is on screen */
+    useEffect(() => {
+        const io = new IntersectionObserver(([e]) => { visible.current = e.isIntersecting; }, { threshold: .3 });
+        io.observe(sectionRef.current);
+        const onKey = e => {
+            if (!visible.current || e.target.closest?.('input, textarea')) return;
+            if (/^[0-9]$/.test(e.key)) press(e.key);
+            else if (e.key === 'Backspace') { e.preventDefault(); press('del'); }
+            else if (e.key === 'Enter') press('go');
+        };
+        addEventListener('keydown', onKey);
+        return () => { io.disconnect(); removeEventListener('keydown', onKey); };
+    });
+
+    const shown = entry ? entry.padStart(2, ' ') : last ? String(last.n).padStart(2, ' ') : '--';
+    const Ind = ({ on, color, children }) => (
+        <div className={`flex items-center gap-2 text-[13px] font-mono tracking-wide transition-colors ${on ? 'text-ink' : 'text-dim'}`}>
+            <Led on={on} color={color} size={10} />{children}
+        </div>
+    );
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'go'];
+
+    return (
+        <section ref={sectionRef} className="px-5 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
+            <SectionHead title="Guess my number">
+                Our game, board edition. I'm thinking of a number between 1 and 99. Punch it in and the board will tell you to go higher or lower.
+            </SectionHead>
+
+            <div className="grid lg:grid-cols-[auto_1fr] gap-6 items-stretch">
+                <div ref={panelRef} className="relative rounded-[18px] border border-copper/25 bg-[#0D1320] p-6 sm:p-8">
+                    <div className="absolute inset-0 rounded-[18px] bg-board opacity-60 pointer-events-none" />
+                    <div className="relative flex items-center justify-between gap-6 mb-6">
+                        <SevenSeg value={shown} color={won ? '#10B981' : '#00F2FE'} />
+                        <div className="flex flex-col gap-2">
+                            <Ind on={dir === 'up'} color="#F59E0B">HIGHER ▲</Ind>
+                            <Ind on={dir === 'down'} color="#FF5FA2">LOWER ▼</Ind>
+                            <Ind on={dir === 'hit'} color="#10B981">FOUND ✓</Ind>
+                        </div>
+                    </div>
+                    <div className="relative grid grid-cols-3 gap-2.5 w-full max-w-[260px] mx-auto">
+                        <Hint show={history.length === 0 && entry === ''} side="bottom" text="Click on these" className="mt-2" />
+                        {keys.map(k => (
+                            <button key={k} onClick={() => press(k)} disabled={won}
+                                    aria-label={k === 'del' ? 'Delete' : k === 'go' ? 'Enter guess' : k}
+                                    className={`keycap h-14 rounded-xl font-mono text-xl disabled:opacity-40
+                                                ${k === 'go' ? 'bg-neon text-obsidian font-bold hover:bg-neon/85'
+                                                  : k === 'del' ? 'bg-[#232C3D] text-muted hover:text-ink'
+                                                  : 'bg-[#1b2231] text-ink hover:bg-[#232C3D]'}`}>
+                                {k === 'del' ? '⌫' : k === 'go' ? 'GO' : k}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="rounded-[18px] border border-edge bg-panel p-6 sm:p-8 flex flex-col min-h-[260px]" aria-live="polite">
+                    <div className="text-[13px] text-muted">{history.length ? `${history.length} ${history.length === 1 ? 'try' : 'tries'} so far` : 'No guesses yet'}</div>
+                    {history.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {history.map((h, i) => (
+                                <span key={i} className={`font-mono text-sm px-2.5 py-1 rounded-lg border
+                                    ${h.dir === 'hit' ? 'border-phosphor/50 text-phosphor bg-phosphor/10'
+                                      : h.dir === 'up' ? 'border-amber/40 text-amber' : 'border-[#FF5FA2]/40 text-[#FF5FA2]'}`}>
+                                    {h.n} {h.dir === 'hit' ? '✓' : h.dir === 'up' ? '▲' : '▼'}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    <div className="flex-1 flex flex-col justify-center py-6">
+                        {won ? (
+                            <div className="probe-in">
+                                <p className="font-serif italic text-2xl sm:text-3xl text-ink leading-snug">{CFG.guessWin}</p>
+                                <p className="mt-3 text-muted">It was <span className="font-mono text-phosphor">{target}</span>, found in {history.length} {history.length === 1 ? 'try' : 'tries'}.</p>
+                                <Btn tone="quiet" onClick={again} className="mt-5">Play again</Btn>
+                            </div>
+                        ) : (
+                            <p className="text-muted text-lg leading-relaxed">
+                                {!last ? 'Type a number on the keypad and press GO.'
+                                    : last.dir === 'up' ? `Higher than ${last.n}. Keep going.`
+                                    : `Lower than ${last.n}. Keep going.`}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   One last thing: the fist punch
+   ═════════════════════════════════════════════ */
+const FistBump = () => {
+    const [phase, setPhase] = useState('idle');   // idle | bumping | done
+    const [count, setCount] = useState(0);
+    const stageRef = useRef(null), timers = useRef([]);
+    useEffect(() => () => timers.current.forEach(clearTimeout), []);
+    const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
+    const punch = () => {
+        if (phase === 'bumping') return;
+        const run = () => {
+            setPhase('bumping');
+            later(() => {
+                setPhase('done'); setCount(c => c + 1); Sfx.bump();
+                const r = stageRef.current.getBoundingClientRect();
+                burst({ x: r.left + r.width / 2, y: r.top + r.height / 2, n: 60 });
+            }, REDUCED ? 0 : 560);
+        };
+        if (phase === 'done') { setPhase('idle'); later(run, 450); } else run();
+    };
+    const together = phase !== 'idle';
+
+    return (
+        <section className="px-5 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
+            <SectionHead title="One last thing">
+                Some things started back in our engineering days and never stopped. This is one of them.
+            </SectionHead>
+            <div className="rounded-[18px] border border-edge bg-panel px-5 py-10 sm:py-14 flex flex-col items-center">
+                <div ref={stageRef} key={count} className={`relative w-full max-w-2xl h-36 sm:h-44 ${phase === 'done' ? 'bump-shake' : ''}`}>
+                    {phase === 'done' && <span className="impact" aria-hidden="true" />}
+                    <div className="fist" style={{ left: together ? 'calc(50% - 1.02em)' : '4%' }} role="img" aria-label="Kishore's fist">🤜</div>
+                    <div className="fist" style={{ right: together ? 'calc(50% - 1.02em)' : '4%' }} role="img" aria-label="Aishu's fist">🤛</div>
+                    <span className={`absolute bottom-0 font-mono text-xs text-neon transition-opacity ${together ? 'opacity-0' : 'opacity-100'}`} style={{ left: '4%' }}>Kishore</span>
+                    <span className={`absolute bottom-0 font-mono text-xs text-[#FF5FA2] transition-opacity ${together ? 'opacity-0' : 'opacity-100'}`} style={{ right: '4%' }}>Aishu</span>
+                </div>
+                <div className="mt-8 min-h-[120px] flex flex-col items-center text-center" aria-live="polite">
+                    {phase === 'done' && (
+                        <div className="probe-in">
+                            <p className="font-serif italic text-3xl sm:text-4xl text-ink leading-tight">Since our engineering days. Some things never change.&nbsp;👊</p>
+                            <p className="mt-3 text-muted">Happy birthday, {CFG.nick}.</p>
+                        </div>
+                    )}
+                    <div className="relative mt-6">
+                        <Btn tone="copper" onClick={punch} disabled={phase === 'bumping'} className="text-base px-6 py-3">
+                            {phase === 'done' ? 'Again 👊' : 'Fist punch 👊'}
+                        </Btn>
+                        <Hint show={phase === 'idle' && count === 0} side="right" className="ml-2 max-sm:hidden" />
+                        <Hint show={phase === 'idle' && count === 0} side="bottom" className="mt-2 sm:hidden" />
+                    </div>
                 </div>
             </div>
         </section>
@@ -1882,7 +2135,7 @@ const PowerDown = () => {
 
                     {/* stage */}
                     <div ref={stageRef} className={`relative rounded-[14px] border overflow-hidden min-h-[400px] flex flex-col items-center justify-center px-5 py-8 transition-colors duration-700
-                                    ${mode === 'dark' ? 'border-amber/20 bg-[#05070b]' : 'border-edge bg-panel/60'}`}>
+                                    ${mode === 'dark' ? 'border-amber/20 bg-[#05070b]' : 'border-edge bg-panel'}`}>
                         {mode === 'party' && (
                             <div className="absolute inset-0 grid place-items-center pointer-events-none" aria-hidden="true">
                                 {['#00F2FE', '#FF007F', '#10B981'].map((c, i) => (
@@ -1978,6 +2231,171 @@ const ProbeCursor = () => {
     );
 };
 
+/* Shared pointer plumbing for the custom cursors: hides the native one, tracks hover/press/leave */
+const usePointerShell = (wrap, onMove, onDown) => useEffect(() => {
+    if (!FINE_POINTER) return;
+    document.documentElement.classList.add('probe-cursor');
+    const w = wrap.current;
+    const move = e => { w.classList.remove('cur-hidden'); onMove(e.clientX, e.clientY); };
+    const over = e => w.classList.toggle('cur-hover', !!e.target.closest?.(INTERACTIVE));
+    const down = e => { w.classList.add('cur-down'); onDown && onDown(e.clientX, e.clientY); };
+    const up = () => w.classList.remove('cur-down');
+    const leave = e => { if (!e.relatedTarget) w.classList.add('cur-hidden'); };
+    addEventListener('pointermove', move, { passive: true });
+    addEventListener('pointerover', over, { passive: true });
+    addEventListener('pointerdown', down); addEventListener('pointerup', up);
+    document.addEventListener('pointerout', leave);
+    return () => {
+        document.documentElement.classList.remove('probe-cursor');
+        removeEventListener('pointermove', move); removeEventListener('pointerover', over);
+        removeEventListener('pointerdown', down); removeEventListener('pointerup', up);
+        document.removeEventListener('pointerout', leave);
+    };
+}, []);
+
+/* 1. Current trail: a glowing PCB trace with 45° bends that follows the pointer and fades */
+const TrailCursor = () => {
+    const wrap = useRef(null), cv = useRef(null), head = useRef(null), api = useRef({});
+    useEffect(() => {
+        if (!FINE_POINTER) return;
+        const c = cv.current, ctx = c.getContext('2d');
+        let dpr = 1, verts = [], mx = -100, my = -100, raf = 0;
+        const LIFE = 1100, MIN = 14, Q = Math.PI / 4;
+        const size = () => { dpr = Math.min(devicePixelRatio || 1, 2); c.width = innerWidth * dpr; c.height = innerHeight * dpr; };
+        size(); addEventListener('resize', size);
+        const frame = () => {
+            const now = performance.now();
+            verts = verts.filter(v => now - v.t < LIFE);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, innerWidth, innerHeight);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            const seg = (a, b, k) => {
+                ctx.strokeStyle = `rgba(0,242,254,${k * .9})`; ctx.lineWidth = 2.2;
+                ctx.shadowColor = 'rgba(0,242,254,.9)'; ctx.shadowBlur = 10 * k;
+                ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            };
+            for (let i = 1; i < verts.length; i++) {
+                const k = 1 - (now - verts[i].t) / LIFE;
+                seg(verts[i - 1], verts[i], k);
+                if (verts[i].via) {   /* little solder pads along the trace */
+                    ctx.shadowBlur = 0; ctx.fillStyle = '#0B0F17'; ctx.strokeStyle = `rgba(212,175,55,${k})`; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(verts[i].x, verts[i].y, 3.2, 0, 7); ctx.fill(); ctx.stroke();
+                }
+            }
+            if (verts.length) seg(verts[verts.length - 1], { x: mx, y: my }, 1);
+            ctx.shadowBlur = 0;
+            raf = verts.length ? requestAnimationFrame(frame) : 0;
+            if (!raf) ctx.clearRect(0, 0, innerWidth, innerHeight);
+        };
+        api.current.move = (x, y) => {
+            mx = x; my = y;
+            head.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            const now = performance.now();
+            if (!verts.length) verts.push({ x, y, t: now });
+            const last = verts[verts.length - 1], dx = x - last.x, dy = y - last.y, len = Math.hypot(dx, dy);
+            if (len > MIN) {   /* snap each new run of trace to the nearest 45° like PCB routing */
+                const a = Math.round(Math.atan2(dy, dx) / Q) * Q;
+                verts.push({ x: last.x + Math.cos(a) * len, y: last.y + Math.sin(a) * len, t: now, via: Math.random() < .22 });
+            }
+            if (!raf) raf = requestAnimationFrame(frame);
+        };
+        return () => { cancelAnimationFrame(raf); removeEventListener('resize', size); };
+    }, []);
+    usePointerShell(wrap, (x, y) => api.current.move?.(x, y), (x, y) => burst({ x, y, n: 14, kind: 'spark' }));
+    if (!FINE_POINTER) return null;
+    return (
+        <div ref={wrap} className="cur-hidden" aria-hidden="true">
+            <canvas ref={cv} className="trail-canvas" />
+            <div ref={head} className="trail-head" />
+        </div>
+    );
+};
+
+/* 2. Soldering iron: glowing tip; a click drops a solder blob with a wisp of smoke */
+const SolderCursor = () => {
+    const wrap = useRef(null), iron = useRef(null);
+    const drop = (x, y) => {
+        const add = (cls, style) => {
+            const el = document.createElement('div'); el.className = cls; Object.assign(el.style, style);
+            document.body.appendChild(el); el.addEventListener('animationend', () => el.remove());
+        };
+        add('solder-blob', { left: `${x}px`, top: `${y}px` });
+        if (!REDUCED) [-10, 2, 12].forEach((sx, i) => add('smoke', { left: `${x + sx / 3}px`, top: `${y - 4}px`, animationDelay: `${i * .12}s`, '--sx': `${sx}px` }));
+    };
+    usePointerShell(wrap, (x, y) => { iron.current.style.transform = `translate3d(${x}px, ${y}px, 0)`; }, drop);
+    if (!FINE_POINTER) return null;
+    return (
+        <div ref={wrap} className="cur-hidden" aria-hidden="true">
+            <div ref={iron} className="iron">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                    <defs>
+                        <radialGradient id="tipGlow"><stop offset="0" stopColor="#FFD27A" stopOpacity=".95" /><stop offset=".45" stopColor="#F59E0B" stopOpacity=".5" /><stop offset="1" stopColor="#F59E0B" stopOpacity="0" /></radialGradient>
+                        <linearGradient id="tipMetal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FF8A3D" /><stop offset="1" stopColor="#b8864b" /></linearGradient>
+                    </defs>
+                    <circle className="tip-glow-big" cx="4" cy="4" r="12" fill="url(#tipGlow)" />
+                    <circle className="tip-glow" cx="4" cy="4" r="7" fill="url(#tipGlow)" />
+                    <path d="M2 2 L13 8 L8 13 Z" fill="url(#tipMetal)" />
+                    <line x1="10" y1="10" x2="30" y2="30" stroke="#c3cad3" strokeWidth="4.5" strokeLinecap="round" />
+                    <line x1="28" y1="28" x2="33" y2="33" stroke="#4b5563" strokeWidth="8" strokeLinecap="round" />
+                    <line x1="33" y1="33" x2="57" y2="57" stroke="#1b2231" strokeWidth="11" strokeLinecap="round" />
+                    <line x1="33" y1="33" x2="57" y2="57" stroke="#34415a" strokeWidth="11" strokeLinecap="round" strokeDasharray="0 0" opacity=".35" />
+                    {[40, 46, 52].map(p => <line key={p} x1={p - 4.5} y1={p + 4.5} x2={p + 4.5} y2={p - 4.5} stroke="#FF3D8E" strokeWidth="2" strokeLinecap="round" />)}
+                </svg>
+            </div>
+        </div>
+    );
+};
+
+/* 4. RGB LED: colour follows pointer speed (slow = cyan, fast = pink); flashes on click */
+const LedCursor = () => {
+    const wrap = useRef(null), led = useRef(null), st = useRef({ x: 0, y: 0, t: 0, v: 0, raf: 0 });
+    useEffect(() => () => cancelAnimationFrame(st.current.raf), []);
+    const paint = () => {
+        const s = st.current;
+        if (!led.current) { s.raf = 0; return; }
+        s.v *= .9;   /* speed eases back down when the pointer rests */
+        const k = Math.min(1, s.v / 1.6);
+        led.current.style.setProperty('--c', `hsl(${185 + k * 145} 100% ${58 + k * 4}%)`);
+        s.raf = s.v > .01 ? requestAnimationFrame(paint) : 0;
+    };
+    usePointerShell(wrap, (x, y) => {
+        const s = st.current, now = performance.now(), dt = Math.max(8, now - s.t);
+        const v = Math.hypot(x - s.x, y - s.y) / dt;
+        s.v = s.v * .7 + Math.min(v, 4) * .3; s.x = x; s.y = y; s.t = now;
+        led.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        if (!s.raf) s.raf = requestAnimationFrame(paint);
+    }, () => {
+        const el = led.current; el.classList.remove('led-flash'); void el.offsetWidth; el.classList.add('led-flash');
+    });
+    if (!FINE_POINTER) return null;
+    return (
+        <div ref={wrap} className="cur-hidden" aria-hidden="true">
+            <div ref={led} className="led-cur">
+                <div className="halo" />
+                <svg width="24" height="40" viewBox="0 0 24 40">
+                    <path d="M5 20 V12 A7 7 0 0 1 19 12 V20 Z" style={{ fill: 'var(--c)' }} />
+                    <rect x="3.5" y="19" width="17" height="3" rx="1" style={{ fill: 'var(--c)' }} opacity=".75" />
+                    <line x1="9" y1="22" x2="9" y2="39" stroke="#aab3be" strokeWidth="1.6" />
+                    <line x1="15" y1="22" x2="15" y2="35" stroke="#aab3be" strokeWidth="1.6" />
+                    <ellipse cx="9.5" cy="11.5" rx="1.8" ry="3.4" fill="#fff" opacity=".6" />
+                </svg>
+            </div>
+        </div>
+    );
+};
+
+const CURSORS = { probe: ProbeCursor, trail: TrailCursor, solder: SolderCursor, led: LedCursor };
+const CURSOR_NAMES = { probe: 'Probe', trail: 'Current trail', solder: 'Soldering iron', led: 'RGB LED' };
+
+/* review helper: add ?pick to the address to switch pointer styles live */
+const CursorPicker = ({ mode, setMode }) => (
+    <div className="fixed bottom-4 left-4 z-[81] flex flex-wrap gap-1.5 p-1.5 rounded-xl border border-white/10 bg-[#161D2B]/90 backdrop-blur text-[12px]">
+        {Object.keys(CURSORS).map(k => (
+            <button key={k} onClick={() => setMode(k)}
+                    className={`px-2.5 py-1.5 rounded-lg ${mode === k ? 'bg-neon text-obsidian font-medium' : 'text-muted hover:text-ink'}`}>{CURSOR_NAMES[k]}</button>
+        ))}
+    </div>
+);
+
 /* Gentler, gliding wheel scrolling on desktop; touch and reduced-motion keep native scrolling */
 const useSmoothScroll = () => useEffect(() => {
     if (REDUCED || !FINE_POINTER) return;
@@ -2015,11 +2433,15 @@ const useSmoothScroll = () => useEffect(() => {
    ═════════════════════════════════════════════ */
 const App = () => {
     useSmoothScroll();
+    const params = new URLSearchParams(location.search);
+    const [cursorMode, setCursorMode] = useState(CURSORS[params.get('cursor')] ? params.get('cursor') : CFG.cursor);
+    const Cursor = CURSORS[cursorMode] || ProbeCursor;
     return (
     <>
         <Confetti />
         <SoundToggle />
-        <ProbeCursor />
+        <Cursor key={cursorMode} />
+        {params.has('pick') && FINE_POINTER && <CursorPicker mode={cursorMode} setMode={setCursorMode} />}
         <div className="fixed inset-0 bg-board pointer-events-none" aria-hidden="true" />
         <div className="fixed inset-0 bg-glow pointer-events-none" aria-hidden="true" />
         <main className="relative">
@@ -2028,7 +2450,9 @@ const App = () => {
             <Board />
             <Terminal />
             <Reasons />
+            <GuessGame />
             <PowerDown />
+            <FistBump />
             <footer className="px-5 sm:px-8 py-14 max-w-6xl mx-auto border-t border-edge/60 flex flex-wrap justify-between gap-3 text-[13px] text-dim">
                 <span>Made for {CFG.name} with love and low impedance.</span>
                 <span className="font-mono text-xs">KD-BDAY-PCB rev {CFG.age}.0</span>
