@@ -1251,26 +1251,26 @@ const Board = () => {
     const [party, setParty] = useState(false);
     const [secret, setSecret] = useState(false);
     const [age, setAge]     = useState(0);
-    const [run, setRun]     = useState(0);   // bumps to restart the counter
     const [sel, setSel]     = useState(null);
     const ref = useRef(null);
 
     /* the age register stays at 00 until the first switch is flipped; overclock restarts the count */
     useEffect(() => {
-        if (!run) return;
+        /* only switch 1 (Overclock) drives the age register: on = count up to the age, off = back to 00 */
+        if (!oc) { setAge(0); return; }
         if (REDUCED) { setAge(CFG.age); return; }
         let v = 0, id;
         setAge(0);
         const tick = () => {
             v++; setAge(v);
-            if (v < CFG.age) id = setTimeout(tick, oc ? 22 : 40 + Math.pow(v / CFG.age, 4) * 260);
+            if (v < CFG.age) id = setTimeout(tick, 40 + Math.pow(v / CFG.age, 4) * 260);
         };
         id = setTimeout(tick, 250);
         return () => clearTimeout(id);
-    }, [run, oc]);
+    }, [oc]);
 
     const dips = [
-        { label: 'Overclock', on: oc,    set: () => { setOc(v => !v); setRun(r => r + 1); } },
+        { label: 'Overclock', on: oc,    set: () => setOc(v => !v) },
         { label: 'Party',     on: party, set: () => setParty(v => !v) },
         { label: 'Secret',    on: secret, set: () => setSecret(v => !v) },
     ];
@@ -1315,7 +1315,7 @@ const Board = () => {
                         <div className="relative inline-flex gap-2 p-2 pb-1.5 rounded-md bg-[#8a1c2b] shadow-[inset_0_-2px_0_rgba(0,0,0,.35)]">
                             <Hint show={!touched} side="right" className="ml-3" />
                             {dips.map((d, i) => (
-                                <button key={d.label} role="switch" aria-checked={d.on} aria-label={d.label} onClick={() => { d.set(); setTouched(true); setRun(r => r || 1); }}
+                                <button key={d.label} role="switch" aria-checked={d.on} aria-label={d.label} onClick={() => { d.set(); setTouched(true); }}
                                         className="flex flex-col items-center gap-1 group">
                                     <span className="relative w-6 h-10 rounded-[3px] bg-[#1b0a0e] border border-black/40">
                                         <span className={`absolute left-[3px] right-[3px] h-4 rounded-[2px] bg-[#f1ece2] shadow
