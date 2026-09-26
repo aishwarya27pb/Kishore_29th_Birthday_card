@@ -161,8 +161,21 @@
         @keyframes floatHeart { 0% { transform: translateY(4px) scale(.5); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-18px) scale(1); opacity: 0; } }
         .antenna { animation: twinkle 1.6s ease-in-out infinite; }
 
+        /* "Click on this" hints: nudge toward the control they point at */
+        .hint-bob { animation: hintBob 1.1s ease-in-out infinite; }
+        @keyframes hintBob { 50% { transform: translate(var(--bx), var(--by)); } }
+        .knob-glow { animation: knobGlow 1.3s ease-in-out infinite; }
+        @keyframes knobGlow { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+        .hint-pill {
+            background: linear-gradient(135deg, #FF3D8E, #d4006a);
+            box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 6px 18px -4px rgba(255,0,127,.65);
+            animation: hintGlow 1.6s ease-in-out infinite;
+        }
+        @keyframes hintGlow { 50% { box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 6px 26px -2px rgba(255,0,127,.95); } }
+        @media (prefers-reduced-motion: reduce) { .hint-bob, .hint-pill, .knob-glow { animation: none; } }
+
         /* Gift intro */
-        .gift-stage { --w: clamp(220px, 58vw, 330px); }
+        .gift-stage { --w: clamp(220px, min(62vw, 50vh), 520px); }
         .gift-paper {
             background-color: #141b29;
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84'><g fill='none' stroke='%23D4AF37' stroke-opacity='.32' stroke-width='1.6' stroke-linejoin='round'><path d='M0 22 H30 L40 32 H84'/><path d='M22 0 V14 L30 22'/><path d='M62 84 V58 L52 48 H38'/><path d='M84 70 H70 L62 62'/></g><g fill='%23D4AF37' fill-opacity='.55'><circle cx='30' cy='22' r='2.6'/><circle cx='38' cy='48' r='2.6'/><circle cx='62' cy='62' r='2.6'/></g></svg>");
@@ -216,11 +229,15 @@ I will never forget your part in my life. Though it was paused for a few years, 
 
 I will never meet a person like you in my life, and you will always remain my one and only best friend for a lifetime, the one who never gave up on me, even when I gave up on myself.
 
+And playing games with you has become my favourite part of the day: It Takes Two, our game of choosing numbers and finding them out, and our thumb wrestling matches. They make me so happy, and I enjoy every single moment of them. I guess it really does take two.
+
 There are so many things to say, but you are one of the best things that has happened in my life.
 
 I wish you a very good future and many more happy returns of the day.
 
-Hope you like this idea of a birthday card.`,
+I didn't know what to give you, so I tried to build something different, just for you. Hope you like it.
+
+And I hope you never forget me.`,
     /* EDIT: one reason per LED. The LEDs spell his age, and "29" happens to use exactly 29 dots. */
     reasons: [
         "You believed in me when I didn't believe in myself.",
@@ -247,7 +264,7 @@ Hope you like this idea of a birthday card.`,
         "You're fun to be around, even when we're doing nothing.",
         "You care so much about the people you love.",
         "You work hard and never make a fuss about it.",
-        "You make me want to be a better person.",
+        "Being around you makes even the hard days feel lighter.",
         "Every memory with you is one I'd keep.",
         "You're one of the best things that ever happened to me.",
         "You're my one and only best friend.",
@@ -386,14 +403,14 @@ const Led = ({ on, color = '#10B981', size = 8 }) => (
                    boxShadow: on ? `0 0 ${size}px ${color}, 0 0 ${size * 2.5}px ${color}55` : 'none' }} />
 );
 
-const Btn = ({ children, onClick, disabled, tone = 'neon', className = '' }) => {
+const Btn = ({ children, onClick, disabled, tone = 'neon', className = '', ...rest }) => {
     const tones = {
         neon:   'text-neon border-neon/30 hover:bg-neon/10 hover:border-neon/60',
         copper: 'text-copper border-copper/30 hover:bg-copper/10 hover:border-copper/60',
         quiet:  'text-muted border-edge hover:text-ink hover:border-dim',
     };
     return (
-        <button onClick={onClick} disabled={disabled}
+        <button onClick={onClick} disabled={disabled} {...rest}
             className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors duration-200
                         disabled:opacity-40 disabled:cursor-not-allowed active:translate-y-px ${tones[tone]} ${className}`}>
             {children}
@@ -401,10 +418,33 @@ const Btn = ({ children, onClick, disabled, tone = 'neon', className = '' }) => 
     );
 };
 
+/* "Click on this" note with a hand-drawn arrow. side = where the note sits relative to its target. */
+const HINT = {
+    bottom: { pos: 'top-full left-1/2 -translate-x-1/2 mt-1.5', dir: 'flex-col',         rot: 0,   bx: '0px',  by: '-5px' },
+    top:    { pos: 'bottom-full left-1/2 -translate-x-1/2 mb-1.5', dir: 'flex-col-reverse', rot: 180, bx: '0px',  by: '5px' },
+    right:  { pos: 'left-full top-1/2 -translate-y-1/2 ml-1',  dir: 'flex-row',         rot: -90, bx: '-5px', by: '0px' },
+    left:   { pos: 'right-full top-1/2 -translate-y-1/2 mr-1', dir: 'flex-row-reverse', rot: 90,  bx: '5px',  by: '0px' },
+};
+const Hint = ({ show, side = 'bottom', text = 'Click on this', className = '', textClass = 'whitespace-nowrap', style }) => {
+    const h = HINT[side];
+    return (
+        <span aria-hidden="true" style={style}
+              className={`absolute z-20 pointer-events-none transition-opacity duration-500 ${style ? '' : h.pos} ${show ? 'opacity-100' : 'opacity-0'} ${className}`}>
+            <span className={`hint-bob flex items-center gap-1.5 ${h.dir}`} style={{ '--bx': h.bx, '--by': h.by }}>
+                <svg width="22" height="34" viewBox="0 0 24 38" fill="none" style={{ transform: `rotate(${h.rot}deg)`, filter: 'drop-shadow(0 0 4px rgba(255,61,142,.7))' }}>
+                    <path d="M13 36 C4 28 20 18 12 4" stroke="#FF5FA2" strokeWidth="2.6" strokeLinecap="round" />
+                    <path d="M6 10 L12 3 L18 9" stroke="#FF5FA2" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className={`hint-pill font-serif italic text-[17px] sm:text-lg leading-tight text-white rounded-full px-3 py-0.5 ${textClass}`}>{text}</span>
+            </span>
+        </span>
+    );
+};
+
 /* ═════════════════════════════════════════════
    Rotary knob (drag, arrow keys, Home/End)
    ═════════════════════════════════════════════ */
-const Knob = ({ label, value, min, max, step, kbStep = step, onChange, format, disabled }) => {
+const Knob = ({ label, value, min, max, step, kbStep = step, onChange, format, disabled, highlight }) => {
     const start = useRef(null);
     const t = (value - min) / (max - min);
     const ang = -135 + t * 270;
@@ -450,6 +490,8 @@ const Knob = ({ label, value, min, max, step, kbStep = step, onChange, format, d
                         <line key={i} x1={k.x1} y1={k.y1} x2={k.x2} y2={k.y2} strokeLinecap="round"
                               stroke={k.on ? '#00F2FE' : '#2d3748'} strokeWidth={i % 5 ? 1.2 : 1.8} opacity={k.on ? .9 : 1} />
                     ))}
+                    {highlight && <circle cx="42" cy="42" r="31.5" fill="none" stroke="#FF5FA2" strokeWidth="2.5" className="knob-glow"
+                                          style={{ filter: 'drop-shadow(0 0 5px rgba(255,61,142,.9))' }} />}
                     <circle cx="42" cy="42" r="28" fill="url(#knobBody)" stroke="#303a4d" />
                     <circle cx="42" cy="42" r="21" fill="#131a26" stroke="#1f2837" />
                     <g transform={`rotate(${ang} 42 42)`}>
@@ -516,7 +558,7 @@ const GiftIntro = () => {
             items.current.forEach((el, i) => {
                 if (!el) return;
                 const g = GIFTS[i], d = clamp(rise * 1.25 - i * .06);
-                el.style.transform = `translate(calc(-50% + ${g.x * w * .62 * d}px), ${-g.y * w * .72 * d}px) rotate(${g.r * d}deg) scale(${.6 + .75 * d})`;
+                el.style.transform = `translate(calc(-50% + ${g.x * w * .62 * d}px), ${-g.y * w * .62 * d}px) rotate(${g.r * d}deg) scale(${(.6 + .75 * d) * Math.max(1, w / 330)})`;
                 el.style.opacity = Math.min(1, d * 3);
             });
 
@@ -577,8 +619,8 @@ const GiftIntro = () => {
                         <span className="absolute -right-3 sm:-right-8 bottom-[22%] rotate-[8deg] origin-top-left">
                             <span className="block w-px h-6 bg-copper/60 ml-3" />
                             <span className="block bg-[#f1ece2] text-[#1b2231] rounded-md px-3 py-2 shadow-lg text-left">
-                                <span className="block font-serif italic text-lg leading-none">For {CFG.nick}</span>
-                                <span className="block text-[11px] mt-1 text-[#56627A]">from {CFG.from}</span>
+                                <span className="block font-serif italic leading-none" style={{ fontSize: 'max(18px, calc(var(--w) * .062))' }}>For {CFG.nick}</span>
+                                <span className="block mt-1 text-[#56627A]" style={{ fontSize: 'max(11px, calc(var(--w) * .036))' }}>from {CFG.from}</span>
                             </span>
                         </span>
                         {/* lid + bow */}
@@ -617,10 +659,10 @@ const GiftIntro = () => {
    Sparky: a tiny chip who reacts to the signal
    mood: lost | curious | happy
    ═════════════════════════════════════════════ */
-const Sparky = ({ mood }) => {
+const Sparky = ({ mood, size = 60 }) => {
     const bulb = { lost: '#F59E0B', curious: '#00F2FE', happy: '#FF5FA2' }[mood];
     return (
-        <svg width="60" height="64" viewBox="0 0 64 68" className="shrink-0 overflow-visible" role="img"
+        <svg width={size} height={size * 68 / 64} viewBox="0 0 64 68" className="shrink-0 overflow-visible" role="img"
              aria-label={`Sparky looks ${mood === 'happy' ? 'delighted' : mood === 'curious' ? 'curious' : 'confused'}`}>
             <g className="bob">
                 {/* antenna */}
@@ -674,6 +716,15 @@ const Hero = () => {
     const [baud, setBaud]     = useState(2400);
     const [locked, setLocked] = useState(false);
     const [tuning, setTuning] = useState(false);
+    /* hints: first "turn this" on the knob; a few seconds after he starts turning, offer Auto-tune */
+    const [turned, setTurned]     = useState(false);
+    const [offerAuto, setOfferAuto] = useState(false);
+    const knobHint = !turned && !locked && !tuning;
+    useEffect(() => {
+        if (!turned) return;
+        const t = setTimeout(() => setOfferAuto(true), 6000);
+        return () => clearTimeout(t);
+    }, [turned]);
     const canvasRef = useRef(null), screenRef = useRef(null);
     const P = useRef({ freq, amp, baud, locked: false, lockAt: 0 });
 
@@ -740,18 +791,30 @@ const Hero = () => {
             }
             ctx.stroke(); ctx.shadowBlur = 0;
 
-            /* a little heart rides every beat once locked */
+            /* a birthday balloon is tied to every beat once locked */
             if (k > .6) {
                 ctx.save();
                 ctx.globalAlpha = (k - .6) / .4;
-                ctx.fillStyle = '#FF5FA2'; ctx.shadowColor = 'rgba(255,0,127,.8)'; ctx.shadowBlur = 12;
+                const sc = Math.min(1.45, Math.max(.8, H / 300));
+                const peakY = mid - H * .34 + H * .08;
                 const first = Math.floor(-ph * .8) - 1;
                 for (let b = first; b <= first + BEATS + 2; b++) {
                     const cx = (b + .34 + ph * .8) / BEATS * W;
-                    if (cx < 10 || cx > W - 10) continue;
-                    const s = 17 + Math.max(0, Math.sin(ph * 6)) * 4;
-                    heartPath(ctx, cx, mid - H * .34 + H * .08 - s - 12, s);
-                    ctx.fill();
+                    if (cx < 14 || cx > W - 14) continue;
+                    const col = ['#FF5FA2', '#00F2FE', '#FFD27A'][((b % 3) + 3) % 3];
+                    const sway = Math.sin(ph * 2 + b) * 3 * sc;
+                    const by = peakY - 30 * sc + Math.sin(ph * 2.4 + b) * 2;
+                    /* string */
+                    ctx.strokeStyle = 'rgba(230,234,240,.45)'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(cx, peakY - 2);
+                    ctx.quadraticCurveTo(cx + 6 * sc, peakY - 12 * sc, cx + sway, by + 13 * sc); ctx.stroke();
+                    /* balloon */
+                    ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.fillStyle = col;
+                    ctx.beginPath(); ctx.ellipse(cx + sway, by, 9.5 * sc, 12.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(cx + sway - 3 * sc, by + 14 * sc); ctx.lineTo(cx + sway + 3 * sc, by + 14 * sc); ctx.lineTo(cx + sway, by + 11 * sc); ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(255,255,255,.55)';
+                    ctx.beginPath(); ctx.ellipse(cx + sway - 3.5 * sc, by - 4.5 * sc, 2.3 * sc, 3.8 * sc, -.4, 0, Math.PI * 2); ctx.fill();
                 }
                 ctx.restore();
             }
@@ -840,13 +903,15 @@ const Hero = () => {
                     </div>
 
                     <div className="rounded-[14px] bg-[#0f141d] border border-white/[.04] p-4 lg:w-[264px] flex flex-col gap-5">
-                        <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-4 justify-items-center">
-                            <Knob label="Frequency" value={freq} min={.5} max={6} step={.01} kbStep={.05}
-                                  onChange={setFreq} format={v => `${v.toFixed(2)} MHz`} disabled={locked || tuning} />
-                            <Knob label="Amplitude" value={amp} min={10} max={100} step={1} kbStep={2}
-                                  onChange={setAmp} format={v => `${v}%`} disabled={locked || tuning} />
-                            <Knob label="Baud rate" value={baud} min={600} max={9600} step={300}
-                                  onChange={setBaud} format={v => `${v} bd`} disabled={tuning} />
+                        <div className="relative grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-4 justify-items-center">
+                            <Knob label="Frequency" value={freq} min={.5} max={6} step={.01} kbStep={.05} highlight={knobHint}
+                                  onChange={v => { setFreq(v); setTurned(true); }} format={v => `${v.toFixed(2)} MHz`} disabled={locked || tuning} />
+                            <Knob label="Amplitude" value={amp} min={10} max={100} step={1} kbStep={2} highlight={knobHint}
+                                  onChange={v => { setAmp(v); setTurned(true); }} format={v => `${v}%`} disabled={locked || tuning} />
+                            <Knob label="Baud rate" value={baud} min={600} max={9600} step={300} highlight={knobHint}
+                                  onChange={v => { setBaud(v); setTurned(true); }} format={v => `${v} bd`} disabled={tuning} />
+                            <Hint show={knobHint} side="left" text="Turn these knobs" className="max-lg:hidden mr-4" />
+                            <Hint show={knobHint} side="top" text="Turn these knobs" className="lg:hidden" />
                         </div>
                         <div className="border-t border-white/[.05] pt-4">
                             <div className="flex items-end gap-3 mb-3">
@@ -861,9 +926,12 @@ const Hero = () => {
                                           style={{ height: `${30 + i * 17}%`, background: i < bars ? (locked ? '#10B981' : '#00F2FE') : '#232C3D' }} />
                                 ))}
                             </div>
-                            {locked
-                                ? <Btn tone="quiet" onClick={rescan} className="w-full mt-3">Scan again</Btn>
-                                : <Btn tone="copper" onClick={autoTune} disabled={tuning} className="w-full mt-3">Auto-tune</Btn>}
+                            <div className="relative mt-3">
+                                {locked
+                                    ? <Btn tone="quiet" onClick={rescan} className="w-full">Scan again</Btn>
+                                    : <Btn tone="copper" onClick={autoTune} disabled={tuning} className="w-full">Auto-tune</Btn>}
+                                <Hint show={offerAuto && !locked && !tuning} side="bottom" text="Stuck? Click on this" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -945,6 +1013,7 @@ const Silk = ({ x, y, children, anchor = 'start', size = 12 }) => (
 
 const Board = () => {
     const [oc, setOc]       = useState(false);
+    const [touched, setTouched] = useState(false);   // hides the hint once a switch is flipped
     const [party, setParty] = useState(false);
     const [debug, setDebug] = useState(false);
     const [age, setAge]     = useState(0);
@@ -994,9 +1063,10 @@ const Board = () => {
                 {/* control strip */}
                 <div className="relative flex flex-wrap items-end justify-between gap-6 px-5 sm:px-8 pt-6 sm:pt-8">
                     <div>
-                        <div className="inline-flex gap-2 p-2 pb-1.5 rounded-md bg-[#8a1c2b] shadow-[inset_0_-2px_0_rgba(0,0,0,.35)]">
+                        <div className="relative inline-flex gap-2 p-2 pb-1.5 rounded-md bg-[#8a1c2b] shadow-[inset_0_-2px_0_rgba(0,0,0,.35)]">
+                            <Hint show={!touched} side="right" className="ml-3" />
                             {dips.map((d, i) => (
-                                <button key={d.label} role="switch" aria-checked={d.on} aria-label={d.label} onClick={d.set}
+                                <button key={d.label} role="switch" aria-checked={d.on} aria-label={d.label} onClick={() => { d.set(); setTouched(true); }}
                                         className="flex flex-col items-center gap-1 group">
                                     <span className="relative w-6 h-10 rounded-[3px] bg-[#1b0a0e] border border-black/40">
                                         <span className={`absolute left-[3px] right-[3px] h-4 rounded-[2px] bg-[#f1ece2] shadow
@@ -1220,6 +1290,7 @@ const Terminal = () => {
     const runId = useRef(0), bodyRef = useRef(null);
 
     const [playing, setPlaying] = useState(false);
+    const [morseTried, setMorseTried] = useState(false);
     const [led, setLed]         = useState(false);
     const [sym, setSym]         = useState('');
     const [decoded, setDecoded] = useState('');
@@ -1227,7 +1298,7 @@ const Terminal = () => {
     const morseId = useRef(0);
 
     useEffect(() => () => { runId.current++; morseId.current++; }, []);
-    useEffect(() => { const b = bodyRef.current; if (b) b.scrollTop = b.scrollHeight; }, [lines, payload]);
+    useEffect(() => { const b = bodyRef.current; if (b) b.scrollTop = b.scrollHeight; }, [lines, payload, status]);
 
     const run = async () => {
         const id = ++runId.current, alive = () => runId.current === id;
@@ -1236,7 +1307,9 @@ const Terminal = () => {
         for (const row of HEX) { await sleep(REDUCED ? 0 : 90); if (!alive()) return; setLines(p => [...p, { t: row, c: 'text-dim' }]); }
         await sleep(REDUCED ? 0 : 350); if (!alive()) return;
         setLines(p => [...p, { tag: 'OK', t: 'CRC-32 match. Decoding payload.' }]);
-        await sleep(REDUCED ? 0 : 400);
+        await sleep(REDUCED ? 0 : 700); if (!alive()) return;
+        /* collapse the boot log so the whole message fits on the page */
+        setLines([{ tag: 'OK', t: `Self-test passed. 1 frame received, ${new TextEncoder().encode(CFG.message).length} bytes decoded.` }]);
         if (REDUCED) { setPayload(CFG.message); setStatus('done'); return; }
         for (let i = 1; i <= CFG.message.length; i++) {
             if (!alive()) return;
@@ -1296,7 +1369,7 @@ const Terminal = () => {
                         <span className="flex items-center gap-2"><Led on={status === 'running'} color="#00F2FE" size={6} />ttyRX0</span>
                         <span>115200 baud, 8N1</span>
                     </div>
-                    <div ref={bodyRef} className="h-[360px] sm:h-[420px] overflow-y-auto px-4 sm:px-5 py-4 font-mono text-[12px] sm:text-[13px] leading-[1.7]">
+                    <div ref={bodyRef} className={`${payload === null ? 'h-[360px] sm:h-[420px] overflow-y-auto' : 'min-h-[360px] sm:min-h-[420px]'} px-4 sm:px-5 py-4 font-mono text-[12px] sm:text-[13px] leading-[1.7]`}>
                         {status === 'idle' && <p className="text-dim">Receiver is idle. Press <span className="text-muted">Run self-test</span> to power it up.<span className="caret" /></p>}
                         {lines.map((l, i) => (
                             <div key={i} className={`whitespace-pre-wrap break-words ${l.c || 'text-muted'}`} style={{ minHeight: l.t ? undefined : '.8em' }}>
@@ -1313,14 +1386,17 @@ const Terminal = () => {
                         {status === 'running' && payload === null && <span className="caret" />}
                     </div>
                     <div className="px-4 sm:px-5 py-3 border-t border-edge flex items-center gap-3">
-                        <Btn onClick={run} disabled={status === 'running'}>{status === 'done' ? 'Run self-test again' : 'Run self-test'}</Btn>
+                        <span className="relative">
+                            <Btn onClick={run} disabled={status === 'running'}>{status === 'done' ? 'Run self-test again' : 'Run self-test'}</Btn>
+                            <Hint show={status === 'idle'} side="right" className="ml-2" />
+                        </span>
                         <span className="text-[13px] text-dim">
                             {status === 'running' ? 'Booting…' : status === 'done' ? '1 frame decoded' : ''}
                         </span>
                     </div>
                 </div>
 
-                <div className="rounded-[14px] border border-edge bg-panel p-5 flex flex-col">
+                <div className="rounded-[14px] border border-edge bg-panel p-5 flex flex-col lg:self-start lg:min-h-[420px]">
                     <h3 className="text-ink font-medium">Morse channel</h3>
                     <p className="text-[13px] text-muted mt-1 leading-relaxed">A second transmission, keyed on an LED at 20 words per minute.</p>
                     <div className="my-6 flex items-center gap-5">
@@ -1333,7 +1409,10 @@ const Terminal = () => {
                     <div className="font-mono text-[13px] text-dim">Decoded</div>
                     <div className="font-mono text-lg text-ink tracking-[.12em] min-h-[1.6em] break-all" aria-live="polite">{decoded || <span className="text-dim">…</span>}</div>
                     <div className="mt-auto pt-6 flex items-center justify-between gap-3">
-                        <Btn tone="copper" onClick={playMorse}>{playing ? 'Stop' : 'Play in Morse'}</Btn>
+                        <span className="relative">
+                            <Btn tone="copper" onClick={() => { setMorseTried(true); playMorse(); }}>{playing ? 'Stop' : 'Play in Morse'}</Btn>
+                            <Hint show={status === 'done' && !morseTried} side="top" />
+                        </span>
                         <label className="flex items-center gap-2 text-[13px] text-muted cursor-pointer">
                             <input type="checkbox" checked={sound} onChange={e => setSound(e.target.checked)} className="accent-[#D4AF37]" />
                             Sound
@@ -1397,8 +1476,10 @@ const Reasons = () => {
                 Every LED holds one reason you matter. Tap them in any order and light up all {total}.
             </SectionHead>
 
-            <div className="grid lg:grid-cols-[auto_1fr] gap-6 items-stretch">
-                <div ref={panelRef} className="relative rounded-[18px] border border-copper/25 bg-[#0D1320] overflow-hidden p-5 sm:p-8 flex justify-center">
+            <div className="grid lg:grid-cols-[auto_1fr] gap-6 items-stretch mt-20">
+                <div className="relative">
+                <Hint show={lit.size === 0} side="top" text="Click on these" />
+                <div ref={panelRef} className="relative h-full rounded-[18px] border border-copper/25 bg-[#0D1320] overflow-hidden p-5 sm:p-8 flex justify-center">
                     <div className="absolute inset-0 bg-board opacity-60 pointer-events-none" />
                     <div className={`relative flex gap-4 sm:gap-7 transition-[filter] duration-700 ${allLit ? '[filter:drop-shadow(0_0_18px_rgba(255,95,162,.35))]' : ''}`}>
                         {grids.map((grid, g) => (
@@ -1422,6 +1503,8 @@ const Reasons = () => {
                             </div>
                         ))}
                     </div>
+                </div>
+
                 </div>
 
                 <div className="rounded-[18px] border border-edge bg-panel p-6 sm:p-8 flex flex-col min-h-[220px]">
@@ -1515,13 +1598,14 @@ const Cake = ({ lit, onSnuff, active, party }) => (
 
 const PowerDown = () => {
     const [mode, setMode] = useState('on');        // on | dark | party
+    const [everDark, setEverDark] = useState(false);
     const [lit, setLit]   = useState([true, true, true]);
     const stageRef = useRef(null), timers = useRef([]);
     useEffect(() => () => timers.current.forEach(clearTimeout), []);
     const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
 
     const toBreakerOff = () => {
-        setLit([true, true, true]); setMode('dark');
+        setLit([true, true, true]); setMode('dark'); setEverDark(true);
         later(() => stageRef.current?.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' }), 60);
     };
     const flip = () => (mode === 'dark' ? setMode('on') : mode === 'on' ? toBreakerOff() : setMode('on'));
@@ -1571,6 +1655,8 @@ const PowerDown = () => {
                             <span className={`absolute left-1/2 -translate-x-1/2 w-12 h-14 rounded-lg border border-black/40
                                               transition-all duration-500 ease-[cubic-bezier(.34,1.56,.64,1)] shadow-[0_6px_14px_rgba(0,0,0,.6)]
                                               ${powered ? 'top-3 bg-gradient-to-b from-[#e9edf3] to-[#aab3be]' : 'top-[83px] bg-gradient-to-b from-[#ef5a5a] to-[#a61e1e]'}`} />
+                            <Hint show={mode === 'on' && !everDark} side="right" className="ml-2 max-md:hidden" />
+                            <Hint show={mode === 'on' && !everDark} side="bottom" className="md:hidden" />
                         </button>
                         <div className="md:text-center">
                             <div className="flex md:justify-center items-center gap-2 text-ink font-medium">
@@ -1595,7 +1681,11 @@ const PowerDown = () => {
                         )}
 
                         <div className={`relative w-full transition-opacity duration-700 ${mode === 'on' ? 'opacity-[.07]' : 'opacity-100'}`}>
-                            <Cake lit={lit} onSnuff={snuff} active={mode === 'dark'} party={mode === 'party'} />
+                            <div className="relative max-w-[420px] mx-auto">
+                                <Cake lit={lit} onSnuff={snuff} active={mode === 'dark'} party={mode === 'party'} />
+                                <Hint show={mode === 'dark'} side="right" text="Click on these" style={{ left: '66%', top: '11%' }}
+                                      textClass="whitespace-normal text-center w-[5.2em] rounded-2xl sm:w-auto sm:whitespace-nowrap sm:rounded-full" />
+                            </div>
                         </div>
 
                         <div className="relative mt-6 text-center min-h-[92px]" aria-live="polite">
