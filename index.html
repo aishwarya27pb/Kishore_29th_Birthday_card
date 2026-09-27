@@ -941,10 +941,10 @@ const GiftIntro = () => {
                turn glides toward the pointer, so it keeps moving smoothly after the mouse stops */
             const t = turn.current, k = REDUCED ? 1 : .1;
             t.x += (tilt.current.x - t.x) * k; t.y += (tilt.current.y - t.y) * k;
-            const spinY = t.x, spinX = t.y;   /* degrees */
+            const spinY = t.x * 180, spinX = t.y * 16;
             scene.current.style.transform =
                 `rotateX(${-20 + spinX - rise * 10}deg) rotateY(${-30 + spinY + rise * 6}deg)`;
-            const settling = Math.abs(tilt.current.x - t.x) > .01 || Math.abs(tilt.current.y - t.y) > .01;
+            const settling = Math.abs(tilt.current.x - t.x) > .0005 || Math.abs(tilt.current.y - t.y) > .0005;
 
             glow.current.style.opacity = light * .8 * (1 - out * .6);
             glow.current.style.transform = `translate(-50%, -50%) scale(${.5 + light * .9})`;
@@ -977,26 +977,20 @@ const GiftIntro = () => {
         addEventListener('resize', onScroll);
         const onMove = e => {
             if (e.pointerType !== 'mouse') return;
-            tilt.current = { x: (e.clientX / innerWidth * 2 - 1) * 180, y: (e.clientY / innerHeight * 2 - 1) * 16 };
+            tilt.current = { x: e.clientX / innerWidth * 2 - 1, y: e.clientY / innerHeight * 2 - 1 };
             onScroll();
         };
         addEventListener('pointermove', onMove, { passive: true });
         /* phones: swipe sideways around the present to spin it (vertical swipes still scroll the page) */
         const el = pad.current;
         let drag = null;
-        /* on the present itself a drag turns it every way (up, down, round and round);
-           elsewhere only sideways swipes spin it, so up/down still scrolls the page */
-        const tDown = e => {
-            if (e.pointerType === 'mouse') return;
-            drag = { x: e.clientX, y: e.clientY, fx: tilt.current.x, fy: tilt.current.y, moved: false, free: stage.current.contains(e.target) };
-        };
+        const tDown = e => { if (e.pointerType === 'mouse') return; drag = { x: e.clientX, y: e.clientY, from: tilt.current.x, moved: false }; };
         const tMove = e => {
             if (!drag || e.pointerType === 'mouse') return;
-            const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-            if (!drag.moved && (drag.free ? Math.hypot(dx, dy) > 8 : Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy))) drag.moved = true;
+            const dx = e.clientX - drag.x;
+            if (!drag.moved && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(e.clientY - drag.y)) drag.moved = true;
             if (!drag.moved) return;
-            const deg = 400 / innerWidth;   /* a full-width swipe is a bit more than one turn */
-            tilt.current = { x: drag.fx + dx * deg, y: drag.free ? drag.fy - dy * deg : drag.fy };
+            tilt.current = { x: drag.from + dx / innerWidth * 2.2, y: tilt.current.y };   /* a full-width swipe is a bit more than one turn */
             onScroll();
         };
         const tUp = () => { if (drag?.moved) swiped.current = Date.now(); drag = null; };
@@ -1030,7 +1024,7 @@ const GiftIntro = () => {
                     </div>
                 </div>
 
-                <div ref={stage} className="gift-stage relative shrink-0" style={{ width: 'var(--w)', height: 'calc(var(--w) * .98)', marginTop: 'calc(var(--w) * .13)', touchAction: 'none' }}>
+                <div ref={stage} className="gift-stage relative shrink-0" style={{ width: 'var(--w)', height: 'calc(var(--w) * .98)', marginTop: 'calc(var(--w) * .13)' }}>
                     {/* light from inside */}
                     <div ref={glow} className="absolute left-1/2 top-[30%] w-[260%] aspect-square rounded-full pointer-events-none opacity-0"
                          style={{ background: 'radial-gradient(circle, rgba(255,210,122,.55), rgba(255,95,162,.18) 35%, transparent 65%)' }} />
