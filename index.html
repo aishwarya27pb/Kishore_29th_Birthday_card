@@ -1300,10 +1300,12 @@ const Hero = () => {
         <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-20 sm:pb-28 max-w-6xl mx-auto">
             {/* volume note: first thing after the present, before any sound plays */}
             <button onClick={() => Sfx.win()} aria-label="Keep your volume up. Tap to test the sound"
-                    className="mb-8 sm:mb-10 inline-flex items-center gap-2 rounded-full border border-[#FF5FA2]/40 bg-[#FF3D8E]/[.08] px-4 py-2 text-[13px] sm:text-sm text-ink hover:bg-[#FF3D8E]/15 transition-colors text-left">
-                <span aria-hidden="true">🔊</span>
-                <span>Keep your volume up, this card plays music.</span>
-                <span className="text-[#FF5FA2] whitespace-nowrap max-sm:hidden">Tap to test</span>
+                    className="mb-8 sm:mb-10 inline-flex items-center gap-2.5 rounded-2xl sm:rounded-full border border-[#FF5FA2]/40 bg-[#FF3D8E]/[.08] px-4 py-2 text-[13px] sm:text-sm text-ink hover:bg-[#FF3D8E]/15 transition-colors text-left">
+                <span aria-hidden="true" className="text-base leading-none">🔊</span>
+                <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span>Keep your volume up, this card plays music.</span>
+                    <span className="text-[#FF5FA2] whitespace-nowrap font-medium">Tap to test</span>
+                </span>
             </button>
 
             {/* headline: swaps from instruction to greeting on lock */}
