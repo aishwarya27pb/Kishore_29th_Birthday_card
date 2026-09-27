@@ -910,6 +910,7 @@ const GiftIntro = () => {
     const wrap = useRef(null), stage = useRef(null), lid = useRef(null), glow = useRef(null), rays = useRef(null);
     const intro = useRef(null), cue = useRef(null), ready = useRef(null), items = useRef([]);
     const scene = useRef(null), inner = useRef([]), tilt = useRef({ x: 0, y: 0 }), turn = useRef({ x: 0, y: 0 });
+    const pad = useRef(null), swiped = useRef(0);
     const fired = useRef(false);
 
     useEffect(() => {
@@ -980,11 +981,32 @@ const GiftIntro = () => {
             onScroll();
         };
         addEventListener('pointermove', onMove, { passive: true });
-        return () => { cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); removeEventListener('pointermove', onMove); };
+        /* phones: swipe sideways around the present to spin it (vertical swipes still scroll the page) */
+        const el = pad.current;
+        let drag = null;
+        const tDown = e => { if (e.pointerType === 'mouse') return; drag = { x: e.clientX, y: e.clientY, from: tilt.current.x, moved: false }; };
+        const tMove = e => {
+            if (!drag || e.pointerType === 'mouse') return;
+            const dx = e.clientX - drag.x;
+            if (!drag.moved && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(e.clientY - drag.y)) drag.moved = true;
+            if (!drag.moved) return;
+            tilt.current = { x: drag.from + dx / innerWidth * 2.2, y: tilt.current.y };   /* a full-width swipe is a bit more than one turn */
+            onScroll();
+        };
+        const tUp = () => { if (drag?.moved) swiped.current = Date.now(); drag = null; };
+        el.addEventListener('pointerdown', tDown);
+        el.addEventListener('pointermove', tMove);
+        el.addEventListener('pointerup', tUp);
+        el.addEventListener('pointercancel', tUp);
+        return () => {
+            cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('scroll', onScroll); removeEventListener('resize', onScroll); removeEventListener('pointermove', onMove);
+            el.removeEventListener('pointerdown', tDown); el.removeEventListener('pointermove', tMove); el.removeEventListener('pointerup', tUp); el.removeEventListener('pointercancel', tUp);
+        };
     }, []);
 
     /* tapping the box opens it (scrolls to the open state) */
     const open = () => {
+        if (Date.now() - swiped.current < 400) return;   /* that was a swipe to spin, not a tap */
         const r = wrap.current.getBoundingClientRect();
         const total = r.height - innerHeight;
         scrollTo({ top: scrollY + r.top + total * .6, behavior: REDUCED ? 'auto' : 'smooth' });
@@ -992,7 +1014,7 @@ const GiftIntro = () => {
 
     return (
         <section ref={wrap} className="relative h-[300vh]" aria-label={`A present for ${CFG.nick}`}>
-            <div className="sticky top-0 h-screen overflow-hidden flex flex-col items-center justify-center gap-[2.5vh] px-5 pt-[8vh] pb-[84px]">
+            <div ref={pad} className="sticky top-0 h-screen overflow-hidden flex flex-col items-center justify-center gap-[2.5vh] px-5 pt-[8vh] pb-[84px]" style={{ touchAction: 'pan-y' }}>
                 <div ref={intro} className="relative z-10 text-center t3d-stage">
                     <div className="t3d-tilt">
                         <p className="leading-none" style={{ fontSize: 'clamp(2.6rem, min(9.5vw, 8vh), 5.4rem)' }}>
