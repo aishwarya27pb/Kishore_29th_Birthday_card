@@ -19,7 +19,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Caveat:wght@500;600&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -264,6 +264,20 @@
         [data-card3d][data-c3="tilt"]::after { opacity: 1; }
         @media (prefers-reduced-motion: reduce) { [data-card3d] { transform: none !important; opacity: 1 !important; } }
 
+        /* 3D lettering for the intro: chunky gold face on a bronze extruded edge, gently tilting in space */
+        .t3d-stage { perspective: 800px; }
+        .t3d-tilt { transform-style: preserve-3d; animation: t3dTilt 7s ease-in-out infinite; }
+        @keyframes t3dTilt { 0%, 100% { transform: rotateX(12deg) rotateY(-6deg); } 50% { transform: rotateX(8deg) rotateY(6deg); } }
+        .t3d { position: relative; display: inline-block; font-family: 'Baloo 2', Geist, sans-serif; font-weight: 800; letter-spacing: -.01em; }
+        .t3d-back { color: #8a5a12;
+            text-shadow: 0 1px 0 #a36d18, 0 2px 0 #986515, 0 3px 0 #8c5c12, 0 4px 0 #80530f, 0 5px 0 #734a0d,
+                         0 6px 0 #66410b, 0 7px 0 #5a3909, 0 8px 0 #4d3007,
+                         0 14px 14px rgba(0,0,0,.6), 0 24px 40px rgba(212,175,55,.22); }
+        .t3d-face { position: absolute; inset: 0;
+            background: linear-gradient(180deg, #fff6d2 0%, #ffe08a 38%, #f0b93f 62%, #ffd873 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .t3d-sub { color: #F3E9D2; text-shadow: 0 1px 0 rgba(212,175,55,.45), 0 4px 12px rgba(0,0,0,.6); }
+        @media (prefers-reduced-motion: reduce) { .t3d-tilt { animation: none; transform: rotateX(10deg); } }
         /* Gift intro */
         .gift-stage { --w: clamp(200px, min(64vw, calc((80vh - 140px) / 1.11)), 620px); }
         .gift-paper {
@@ -382,10 +396,14 @@ const CFG = {
             { photos: [{ img: "memories/02.jpg", ar: 1.333 }],                                  caption: "Temple days ☀️ Shades on, serious face on" },
             { photos: [{ img: "memories/03.jpg", ar: .466 }],                                   caption: "Me: ✌️  You: sitting like a king 👑" },
             { photos: [{ img: "memories/04.jpg", ar: .466 }],                                   caption: "Caught mid-laugh. Rare footage 😂" },
+            { photos: [{ img: "memories/13.jpg", ar: .466 }],                                   caption: "Holding my bag like it's his own 👜😂" },
+            { photos: [{ img: "memories/14.jpg", ar: .466 }],                                   caption: "Temple buddies 🛕" },
             { photos: [{ img: "memories/05.jpg", ar: .306 }],                                   caption: "Barefoot and blessed 🙏" },
             { photos: [{ img: "memories/06.jpg", ar: .666 }],                                   caption: "Kempegowda Run 2026 🏃 Bibs on, thumbs up!" },
             { photos: [{ img: "memories/07.jpg", ar: .298 }],                                   caption: "Arms crossed again. Signature pose ✔️" },
+            { photos: [{ img: "memories/15.jpg", ar: .75 }],                                    caption: "Kakashi tee + the signature pose 😎" },
             { photos: [{ img: "memories/08.jpg", ar: .322 }],                                   caption: "Cap on, smile on 🧢" },
+            { photos: [{ img: "memories/12.jpg", ar: .562 }],                                   caption: "BMW cap, full-throttle smile 🏎️" },
             { photos: [{ img: "memories/09.jpg", ar: .361 }],                                   caption: "Akatsuki hoodie under the tricolour 🇮🇳" },
             { photos: [{ img: "memories/10.jpg", ar: .75 }, { img: "memories/11.jpg", ar: .75 }], caption: "The photoshoot that never ended 📸" },
         ],
@@ -508,7 +526,7 @@ const ALBUM_TUNE = [
     [880, 1046.5, 1174.66, 1046.5],    /* A C D C */
     [783.99, 659.25, 587.33, 523.25],  /* G E D C, home */
 ];
-const ALBUM_RUN = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66];   /* closing ripples down this */
+const ALBUM_RUN = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];   /* closing ripples down this */
 const Sfx = (() => {
     let ctx = null, master = null, muted = false;
     const listeners = new Set();
@@ -890,7 +908,7 @@ const G3Face = ({ w, h, t, rib, shade }) => (
 const GiftIntro = () => {
     const wrap = useRef(null), stage = useRef(null), lid = useRef(null), glow = useRef(null), rays = useRef(null);
     const intro = useRef(null), cue = useRef(null), ready = useRef(null), items = useRef([]);
-    const scene = useRef(null), inner = useRef([]), tilt = useRef({ x: 0, y: 0 });
+    const scene = useRef(null), inner = useRef([]), tilt = useRef({ x: 0, y: 0 }), turn = useRef({ x: 0, y: 0 });
     const fired = useRef(false);
 
     useEffect(() => {
@@ -917,9 +935,14 @@ const GiftIntro = () => {
             lid.current.style.opacity = 1 - seg(.34, .46);
             lid.current.querySelector('.bow').style.transform = `scale(${1 + untie * .12}) rotateZ(${Math.sin(untie * Math.PI * 3) * 8}deg)`;
             inner.current.forEach(el => el && (el.style.opacity = light));
-            /* turn the box a little as it opens, and lean toward the mouse */
+            /* the mouse turns the box: left to right spins it a full 360°, up and down tips it.
+               turn glides toward the pointer, so it keeps moving smoothly after the mouse stops */
+            const t = turn.current, k = REDUCED ? 1 : .1;
+            t.x += (tilt.current.x - t.x) * k; t.y += (tilt.current.y - t.y) * k;
+            const spinY = t.x * 180, spinX = t.y * 16;
             scene.current.style.transform =
-                `rotateX(${-20 + tilt.current.y * 7 - rise * 10}deg) rotateY(${-30 + tilt.current.x * 14 + rise * 6}deg)`;
+                `rotateX(${-20 + spinX - rise * 10}deg) rotateY(${-30 + spinY + rise * 6}deg)`;
+            const settling = Math.abs(tilt.current.x - t.x) > .0005 || Math.abs(tilt.current.y - t.y) > .0005;
 
             glow.current.style.opacity = light * .8 * (1 - out * .6);
             glow.current.style.transform = `translate(-50%, -50%) scale(${.5 + light * .9})`;
@@ -930,7 +953,8 @@ const GiftIntro = () => {
                 const g = GIFTS[i], d = clamp(rise * 1.25 - i * .06);
                 /* from the floor of the box (y = +half height) up and out past the rim, spreading and drifting toward you */
                 const y = w * .2 - d * w * (.52 + g.y * .3), x = g.x * w * (innerWidth < 500 ? .5 : .6) * ease(clamp(d * 1.4 - .3)), z = d * w * .18;
-                el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) translate(-50%, -50%) rotate(${g.r * d}deg) scale(${(.7 + .65 * d) * Math.max(1, w / 330)})`;
+                /* turned back against the box's spin, so the gifts keep facing you */
+                el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${-(spinY + rise * 6)}deg) rotateX(${-spinX}deg) translate(-50%, -50%) rotate(${g.r * d}deg) scale(${(.7 + .65 * d) * Math.max(1, w / 330)})`;
                 el.style.opacity = d > 0 ? 1 : 0;
             });
 
@@ -941,6 +965,7 @@ const GiftIntro = () => {
                 burst({ x: b.left + b.width / 2, y: b.top + b.height * .25, n: 70 });
             }
             if (p < .08) fired.current = false;
+            if (settling) onScroll();
         };
         const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
         /* re-measure whenever layout settles (Tailwind styles arrive after first paint) */
@@ -967,9 +992,13 @@ const GiftIntro = () => {
     return (
         <section ref={wrap} className="relative h-[300vh]" aria-label={`A present for ${CFG.nick}`}>
             <div className="sticky top-0 h-screen overflow-hidden flex flex-col items-center justify-center gap-[2.5vh] px-5 pt-[8vh] pb-[84px]">
-                <div ref={intro} className="relative z-10 text-center">
-                    <p className="font-serif italic text-ink leading-none" style={{ fontSize: 'clamp(2.6rem, min(9vw, 7.5vh), 5rem)' }}>For you, {CFG.pet}.</p>
-                    <p className="mt-[1.4vh] text-muted text-base sm:text-lg">Something small, wrapped with a lot of love.</p>
+                <div ref={intro} className="relative z-10 text-center t3d-stage">
+                    <div className="t3d-tilt">
+                        <p className="leading-none" style={{ fontSize: 'clamp(2.6rem, min(9.5vw, 8vh), 5.4rem)' }}>
+                            <span className="t3d"><span className="t3d-back">For you, {CFG.pet}.</span><span className="t3d-face" aria-hidden="true">For you, {CFG.pet}.</span></span>
+                        </p>
+                        <p className="t3d-sub mt-[2vh] text-base sm:text-lg">Something small, wrapped with a lot of love.</p>
+                    </div>
                 </div>
 
                 <div ref={stage} className="gift-stage relative shrink-0" style={{ width: 'var(--w)', height: 'calc(var(--w) * .98)', marginTop: 'calc(var(--w) * .13)' }}>
