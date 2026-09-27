@@ -19,7 +19,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Caveat:wght@500;600&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Caveat:wght@500;600&family=Pacifico&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -264,11 +264,12 @@
         [data-card3d][data-c3="tilt"]::after { opacity: 1; }
         @media (prefers-reduced-motion: reduce) { [data-card3d] { transform: none !important; opacity: 1 !important; } }
 
-        /* 3D lettering for the intro: chunky gold face on a bronze extruded edge, gently tilting in space */
+        /* 3D lettering for the intro: bubbly script, gold face on a bronze extruded edge, gently tilting in space */
         .t3d-stage { perspective: 800px; }
         .t3d-tilt { transform-style: preserve-3d; animation: t3dTilt 7s ease-in-out infinite; }
         @keyframes t3dTilt { 0%, 100% { transform: rotateX(12deg) rotateY(-6deg); } 50% { transform: rotateX(8deg) rotateY(6deg); } }
-        .t3d { position: relative; display: inline-block; font-family: 'Baloo 2', Geist, sans-serif; font-weight: 800; letter-spacing: -.01em; }
+        .t3d { position: relative; display: inline-block; font-family: Pacifico, cursive; font-weight: 400; }
+        .t3d-back, .t3d-face { display: inline-block; padding: .1em .18em .18em; }   /* room for the script's swashes */
         .t3d-back { color: #8a5a12;
             text-shadow: 0 1px 0 #a36d18, 0 2px 0 #986515, 0 3px 0 #8c5c12, 0 4px 0 #80530f, 0 5px 0 #734a0d,
                          0 6px 0 #66410b, 0 7px 0 #5a3909, 0 8px 0 #4d3007,
