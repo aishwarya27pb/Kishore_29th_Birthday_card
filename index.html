@@ -52,6 +52,8 @@
     <style>
         :root { --pulse-dur: 2.8s; }
         html { -webkit-text-size-adjust: 100%; }
+        /* ultrawide / big monitors: everything sized in rem grows with the screen, so the card isn't a thin strip */
+        html { font-size: clamp(16px, 100vw / 137.6, 25px); }
         body {
             margin: 0;
             background: #0B0F17;
@@ -280,7 +282,7 @@
         .t3d-sub { color: #F3E9D2; text-shadow: 0 1px 0 rgba(212,175,55,.45), 0 4px 12px rgba(0,0,0,.6); }
         @media (prefers-reduced-motion: reduce) { .t3d-tilt { animation: none; transform: rotateX(10deg); } }
         /* Gift intro */
-        .gift-stage { --w: clamp(200px, min(64vw, calc((80vh - 140px) / 1.11)), 620px); }
+        .gift-stage { --w: clamp(200px, min(64vw, calc((80vh - 140px) / 1.11)), 38.75rem); }
         .gift-paper {
             background-color: #141b29;
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84'><g fill='none' stroke='%23D4AF37' stroke-opacity='.32' stroke-width='1.6' stroke-linejoin='round'><path d='M0 22 H30 L40 32 H84'/><path d='M22 0 V14 L30 22'/><path d='M62 84 V58 L52 48 H38'/><path d='M84 70 H70 L62 62'/></g><g fill='%23D4AF37' fill-opacity='.55'><circle cx='30' cy='22' r='2.6'/><circle cx='38' cy='48' r='2.6'/><circle cx='62' cy='62' r='2.6'/></g></svg>");
@@ -324,7 +326,7 @@
         }
 
         /* ── Memory album: a 3D book with turning pages ── */
-        .album-stage { --pw: min(400px, calc((100vw - 32px) / 2), calc(70vh / 1.42)); --ph: calc(var(--pw) * 1.42); perspective: 2400px; }
+        .album-stage { --pw: min(25rem, calc((100vw - 32px) / 2), calc(70vh / 1.42)); --ph: calc(var(--pw) * 1.42); perspective: 2400px; }
         @media (max-width: 640px) { .album-stage { --ph: min(calc(var(--pw) * 1.95), 64vh); } }
         .album-book { position: relative; width: calc(var(--pw) * 2); height: var(--ph); transform-style: preserve-3d;
                       transition: transform 1s cubic-bezier(.645,.045,.355,1); }
@@ -395,12 +397,14 @@ const CFG = {
         pages: [
             { photos: [{ img: "memories/01.jpg", ar: .75 }],                                    caption: "The birthday boy himself 😎" },
             { photos: [{ img: "memories/02.jpg", ar: 1.333 }],                                  caption: "Temple days ☀️ Shades on, serious face on" },
+            { photos: [{ img: "memories/17.jpg", ar: .602 }],                                   caption: "Same day, a proper photo this time 📸" },
             { photos: [{ img: "memories/03.jpg", ar: .466 }],                                   caption: "Me: ✌️  You: sitting like a king 👑" },
             { photos: [{ img: "memories/04.jpg", ar: .466 }],                                   caption: "Caught mid-laugh. Rare footage 😂" },
             { photos: [{ img: "memories/13.jpg", ar: .466 }],                                   caption: "Holding my bag like it's his own 👜😂" },
             { photos: [{ img: "memories/14.jpg", ar: .466 }],                                   caption: "Temple buddies 🛕" },
             { photos: [{ img: "memories/05.jpg", ar: .306 }],                                   caption: "Barefoot and blessed 🙏" },
             { photos: [{ img: "memories/06.jpg", ar: .666 }],                                   caption: "Kempegowda Run 2026 🏃 Bibs on, thumbs up!" },
+            { photos: [{ img: "memories/16.jpg", ar: .666 }],                                   caption: "Run? We walked it, side by side 😄" },
             { photos: [{ img: "memories/07.jpg", ar: .298 }],                                   caption: "Arms crossed again. Signature pose ✔️" },
             { photos: [{ img: "memories/15.jpg", ar: .75 }],                                    caption: "Kakashi tee + the signature pose 😎" },
             { photos: [{ img: "memories/08.jpg", ar: .322 }],                                   caption: "Cap on, smile on 🧢" },
@@ -420,6 +424,10 @@ Thank you so much for everything. 🙏
 The support you gave me, the motivation you gave me when I was completely low, the gifts you gave me that I never thought I would have in my life, and all the moments... ✨
 
 I will never forget your part in my life. Though it was paused for a few years, you came back into my life with a good purpose, and it made my life better. 💫
+
+When everyone else had left, you still chose to talk to me, and you kept encouraging me to improve myself. 🌱
+
+You are the most loyal soul I know. 💛
 
 I will never meet a person like you in my life, and you will always remain my one and only best friend for a lifetime, the one who never gave up on me, even when I gave up on myself. 🤗
 
@@ -776,7 +784,7 @@ const Hint = ({ show, side = 'bottom', text = 'Click on this', className = '', t
                     <path d="M13 36 C4 28 20 18 12 4" stroke="#FF5FA2" strokeWidth="2.6" strokeLinecap="round" />
                     <path d="M6 10 L12 3 L18 9" stroke="#FF5FA2" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span className={`hint-pill font-serif italic text-[17px] sm:text-lg leading-tight text-white rounded-full px-3 py-0.5 ${textClass}`}>{text}</span>
+                <span className={`hint-pill font-serif italic text-[1.0625rem] sm:text-lg leading-tight text-white rounded-full px-3 py-0.5 ${textClass}`}>{text}</span>
             </span>
         </span>
     );
@@ -841,8 +849,8 @@ const Knob = ({ label, value, min, max, step, kbStep = step, onChange, format, d
                 </svg>
             </div>
             <div className="text-center leading-tight">
-                <div className="text-[13px] text-ink">{label}</div>
-                <div className="font-mono text-[11px] text-neon tabular-nums">{format(value)}</div>
+                <div className="text-[0.8125rem] text-ink">{label}</div>
+                <div className="font-mono text-[0.6875rem] text-neon tabular-nums">{format(value)}</div>
             </div>
         </div>
     );
@@ -1322,7 +1330,7 @@ const Hero = () => {
         <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-20 sm:pb-28 max-w-6xl mx-auto">
             {/* volume note: first thing after the present, before any sound plays */}
             <button onClick={() => Sfx.win()} aria-label="Keep your volume up. Tap to test the sound"
-                    className="mb-8 sm:mb-10 inline-flex items-center gap-2.5 rounded-2xl sm:rounded-full border border-[#FF5FA2]/40 bg-[#FF3D8E]/[.08] px-4 py-2 text-[13px] sm:text-sm text-ink hover:bg-[#FF3D8E]/15 transition-colors text-left">
+                    className="mb-8 sm:mb-10 inline-flex items-center gap-2.5 rounded-2xl sm:rounded-full border border-[#FF5FA2]/40 bg-[#FF3D8E]/[.08] px-4 py-2 text-[0.8125rem] sm:text-sm text-ink hover:bg-[#FF3D8E]/15 transition-colors text-left">
                 <span aria-hidden="true" className="text-base leading-none">🔊</span>
                 <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     <span>Keep your volume up, this card plays music.</span>
@@ -1357,20 +1365,20 @@ const Hero = () => {
                             shadow-[0_30px_80px_-30px_rgba(0,0,0,.8)]">
                 <div className="grid lg:grid-cols-[1fr_auto] gap-3">
                     <div data-card3d ref={screenRef} className="relative rounded-[14px] overflow-hidden bg-[#05080d] border border-black graticule
-                                                    h-[clamp(230px,52vw,400px)] lg:h-auto lg:min-h-[420px]">
+                                                    h-[clamp(14.375rem,52vw,25rem)] lg:h-auto lg:min-h-[26.25rem]">
                         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" aria-label="Oscilloscope trace" role="img" />
-                        <div className="absolute top-3 left-4 font-mono text-[11px] text-neon/70 tabular-nums">CH1 {freq.toFixed(2)} MHz</div>
-                        <div className="absolute top-3 right-4 font-mono text-[11px] text-copper/70 tabular-nums">REF {TARGET.toFixed(2)} MHz</div>
-                        <div className="absolute bottom-3 left-4 font-mono text-[11px] text-dim tabular-nums">{amp}% amp, {baud} bd</div>
-                        <div className="absolute bottom-3 right-4 font-mono text-[11px] text-dim">{locked ? 'heart rate: very happy' : 'AM, 8N1'}</div>
-                        <div className={`absolute inset-x-0 bottom-[16%] sm:bottom-auto sm:top-[8%] px-3 text-center font-mono text-[10px] sm:text-sm tracking-[.06em] sm:tracking-[.12em] text-neon
+                        <div className="absolute top-3 left-4 font-mono text-[0.6875rem] text-neon/70 tabular-nums">CH1 {freq.toFixed(2)} MHz</div>
+                        <div className="absolute top-3 right-4 font-mono text-[0.6875rem] text-copper/70 tabular-nums">REF {TARGET.toFixed(2)} MHz</div>
+                        <div className="absolute bottom-3 left-4 font-mono text-[0.6875rem] text-dim tabular-nums">{amp}% amp, {baud} bd</div>
+                        <div className="absolute bottom-3 right-4 font-mono text-[0.6875rem] text-dim">{locked ? 'heart rate: very happy' : 'AM, 8N1'}</div>
+                        <div className={`absolute inset-x-0 bottom-[16%] sm:bottom-auto sm:top-[8%] px-3 text-center font-mono text-[0.625rem] sm:text-sm tracking-[.06em] sm:tracking-[.12em] text-neon
                                          transition-opacity duration-700 delay-700 ${locked ? 'opacity-100' : 'opacity-0'}`}
                              style={{ textShadow: '0 0 12px rgba(0,242,254,.7)' }}>
                             SIGNAL LOCKED: HAPPY BIRTHDAY {CFG.nick.toUpperCase()}! ♥
                         </div>
                     </div>
 
-                    <div data-card3d className="rounded-[14px] bg-[#0f141d] border border-white/[.04] p-4 lg:w-[264px] flex flex-col gap-5">
+                    <div data-card3d className="rounded-[14px] bg-[#0f141d] border border-white/[.04] p-4 lg:w-[16.5rem] flex flex-col gap-5">
                         <div className="relative grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-4 justify-items-center">
                             <Knob label="Frequency" value={freq} min={.5} max={6} step={.01} kbStep={.05} highlight={knobHint}
                                   onChange={v => { setFreq(v); setTurned(true); }} format={v => `${v.toFixed(2)} MHz`} disabled={locked || tuning} />
@@ -1385,7 +1393,7 @@ const Hero = () => {
                             <div className="flex items-end gap-3 mb-3">
                                 <Sparky mood={mood} />
                                 <div className="relative flex-1 rounded-xl rounded-bl-sm bg-white/[.04] border border-white/[.06] px-3 py-2 mb-5">
-                                    <p className="text-[13px] text-ink/90 leading-snug min-h-[2.6em]" aria-live="polite">{hint}</p>
+                                    <p className="text-[0.8125rem] text-ink/90 leading-snug min-h-[2.6em]" aria-live="polite">{hint}</p>
                                 </div>
                             </div>
                             <div className="flex items-end gap-1 h-5" aria-label={`Signal strength ${bars} of 5`} role="img">
@@ -1548,13 +1556,13 @@ const Terminal = () => {
                 Run the self-test to boot the receiver. It will decode the frame that's been waiting on the line for you.
             </SectionHead>
 
-            <div className="grid lg:grid-cols-[1fr_300px] gap-4 min-[1360px]:-mx-20">
+            <div className="grid lg:grid-cols-[1fr_18.75rem] gap-4 min-[1360px]:-mx-20">
                 <div data-card3d className="z-10 rounded-[14px] border border-edge bg-[#070A10] overflow-hidden flex flex-col">
-                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-edge font-mono text-[11px] text-dim">
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-edge font-mono text-[0.6875rem] text-dim">
                         <span className="flex items-center gap-2"><Led on={status === 'running'} color="#00F2FE" size={6} />ttyRX0</span>
                         <span>115200 baud, 8N1</span>
                     </div>
-                    <div ref={bodyRef} className={`${payload === null ? 'h-[360px] sm:h-[420px] overflow-y-auto' : 'min-h-[360px] sm:min-h-[420px]'} px-4 sm:px-5 py-4 font-mono text-[12px] sm:text-[13px] leading-[1.7]`}>
+                    <div ref={bodyRef} className={`${payload === null ? 'h-[22.5rem] sm:h-[26.25rem] overflow-y-auto' : 'min-h-[22.5rem] sm:min-h-[26.25rem]'} px-4 sm:px-5 py-4 font-mono text-[0.75rem] sm:text-[0.8125rem] leading-[1.7]`}>
                         {status === 'idle' && <p className="text-dim">Receiver is idle. Press <span className="text-muted">Run self-test</span> to power it up.<span className="caret" /></p>}
                         {lines.map((l, i) => (
                             <div key={i} className={`whitespace-pre-wrap break-words ${l.c || 'text-muted'}`} style={{ minHeight: l.t ? undefined : '.8em' }}>
@@ -1564,7 +1572,7 @@ const Terminal = () => {
                         ))}
                         {payload !== null && (
                             <div className="mt-5 mb-2 pl-4 border-l-2 border-neon/40">
-                                <p className={`font-sans text-[15px] sm:text-base text-ink leading-[1.75] whitespace-pre-wrap ${status === 'running' ? 'caret' : ''}`}>{payload}</p>
+                                <p className={`font-sans text-[0.9375rem] sm:text-base text-ink leading-[1.75] whitespace-pre-wrap ${status === 'running' ? 'caret' : ''}`}>{payload}</p>
                                 {status === 'done' && <p className="mt-4 font-serif italic text-xl text-copper">{CFG.signature}</p>}
                             </div>
                         )}
@@ -1575,15 +1583,15 @@ const Terminal = () => {
                             <Btn onClick={run} disabled={status === 'running'}>{status === 'done' ? 'Run self-test again' : 'Run self-test'}</Btn>
                             <Hint show={status === 'idle'} side="right" className="ml-2" />
                         </span>
-                        <span className="text-[13px] text-dim">
+                        <span className="text-[0.8125rem] text-dim">
                             {status === 'running' ? 'Booting…' : status === 'done' ? '1 frame decoded' : ''}
                         </span>
                     </div>
                 </div>
 
-                <div data-card3d className="rounded-[14px] border border-edge bg-panel p-5 flex flex-col lg:self-start lg:min-h-[420px]">
+                <div data-card3d className="rounded-[14px] border border-edge bg-panel p-5 flex flex-col lg:self-start lg:min-h-[26.25rem]">
                     <h3 className="text-ink font-medium">Morse channel</h3>
-                    <p className="text-[13px] text-muted mt-1 leading-relaxed">A second transmission, keyed on an LED at 20 words per minute.</p>
+                    <p className="text-[0.8125rem] text-muted mt-1 leading-relaxed">A second transmission, keyed on an LED at 20 words per minute.</p>
                     <div className="my-6 flex items-center gap-5">
                         <span className="relative w-14 h-14 rounded-full border border-edge bg-black grid place-items-center">
                             <span className="w-8 h-8 rounded-full transition-[background,box-shadow] duration-75"
@@ -1591,14 +1599,14 @@ const Terminal = () => {
                         </span>
                         <span className="font-mono text-2xl text-laser tracking-[.2em] min-h-[1.5em]" aria-hidden="true">{sym}</span>
                     </div>
-                    <div className="font-mono text-[13px] text-dim">Decoded</div>
+                    <div className="font-mono text-[0.8125rem] text-dim">Decoded</div>
                     <div className="font-mono text-lg text-ink tracking-[.12em] min-h-[1.6em] break-words" aria-live="polite">{decoded || <span className="text-dim">…</span>}</div>
                     <div className="mt-auto pt-6 flex items-center justify-between gap-3">
                         <span className="relative">
                             <Btn tone="copper" onClick={() => { setMorseTried(true); playMorse(); }}>{playing ? 'Stop' : 'Play in Morse'}</Btn>
                             <Hint show={status === 'done' && !morseTried} side="top" />
                         </span>
-                        <label className="flex items-center gap-2 text-[13px] text-muted cursor-pointer">
+                        <label className="flex items-center gap-2 text-[0.8125rem] text-muted cursor-pointer">
                             <input type="checkbox" checked={sound} onChange={e => setSound(e.target.checked)} className="accent-[#D4AF37]" />
                             Sound
                         </label>
@@ -1693,8 +1701,8 @@ const Reasons = () => {
 
                 </div>
 
-                <div data-card3d className="rounded-[18px] border border-edge bg-panel p-6 sm:p-8 flex flex-col min-h-[220px]">
-                    <div className="flex items-center justify-between text-[13px] text-muted">
+                <div data-card3d className="rounded-[18px] border border-edge bg-panel p-6 sm:p-8 flex flex-col min-h-[13.75rem]">
+                    <div className="flex items-center justify-between text-[0.8125rem] text-muted">
                         <span>{lit.size} of {total} lit</span>
                         <span className="flex-1 mx-4 h-1 rounded-full bg-edge overflow-hidden">
                             <span className="block h-full rounded-full transition-all duration-500"
@@ -1775,7 +1783,7 @@ const GuessGame = () => {
 
     const shown = entry ? entry.padStart(2, ' ') : last ? String(last.n).padStart(2, ' ') : '--';
     const Ind = ({ on, color, children }) => (
-        <div className={`flex items-center gap-2 text-[13px] font-mono tracking-wide transition-colors ${on ? 'text-ink' : 'text-dim'}`}>
+        <div className={`flex items-center gap-2 text-[0.8125rem] font-mono tracking-wide transition-colors ${on ? 'text-ink' : 'text-dim'}`}>
             <Led on={on} color={color} size={10} />{children}
         </div>
     );
@@ -1798,7 +1806,7 @@ const GuessGame = () => {
                             <Ind on={dir === 'hit'} color="#10B981">FOUND ✓</Ind>
                         </div>
                     </div>
-                    <div className="relative grid grid-cols-3 gap-2.5 w-full max-w-[260px] mx-auto">
+                    <div className="relative grid grid-cols-3 gap-2.5 w-full max-w-[16.25rem] mx-auto">
                         <Hint show={history.length === 0 && entry === ''} side="bottom" text="Click on these" className="mt-2" />
                         {keys.map(k => (
                             <button key={k} onClick={() => press(k)} disabled={won}
@@ -1813,8 +1821,8 @@ const GuessGame = () => {
                     </div>
                 </div>
 
-                <div data-card3d className="rounded-[18px] border border-edge bg-panel p-6 sm:p-8 flex flex-col min-h-[260px]" aria-live="polite">
-                    <div className="text-[13px] text-muted">{history.length ? `${history.length} ${history.length === 1 ? 'try' : 'tries'} so far` : 'No guesses yet'}</div>
+                <div data-card3d className="rounded-[18px] border border-edge bg-panel p-6 sm:p-8 flex flex-col min-h-[16.25rem]" aria-live="polite">
+                    <div className="text-[0.8125rem] text-muted">{history.length ? `${history.length} ${history.length === 1 ? 'try' : 'tries'} so far` : 'No guesses yet'}</div>
                     {history.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                             {history.map((h, i) => (
@@ -1924,6 +1932,20 @@ const AlbumFace = ({ face, side, onZoom, onClose, done }) => {
                         <p className="text-[#FF9CC4]">For {CFG.pet},</p>
                         <p className="mt-[8%] whitespace-pre-line">{glue(A.dedication)}</p>
                         <p className="mt-[10%] text-right text-[#D4AF37]">{CFG.signature}</p>
+                    </div>
+                )}
+                {face.kind === 'blank' && (
+                    /* spare page before the ending: a little memory-chip status readout */
+                    <div className="flex-1 flex flex-col items-center justify-center text-center gap-[5%]">
+                        <Chip className="w-[26%] opacity-80" />
+                        <div className="font-mono text-[#D4AF37]/80 leading-relaxed" style={{ fontSize: 'max(10px, calc(var(--pw) * .034))' }}>
+                            <div>Storage used: {CFG.album.pages.reduce((n, p) => n + p.photos.length, 0)} photos</div>
+                            <div>Free space: ∞</div>
+                        </div>
+                        <div className="w-[62%] h-[10px] rounded-full border border-[#D4AF37]/40 overflow-hidden p-[2px]">
+                            <div className="h-full w-[38%] rounded-full bg-gradient-to-r from-[#FF5FA2] to-[#D4AF37]" />
+                        </div>
+                        <p className="album-hand text-[#EDE6D8]" style={{ fontSize: 'max(14px, calc(var(--pw) * .06))' }}>Room for so many more.</p>
                     </div>
                 )}
                 {face.kind === 'end' && (
@@ -2052,7 +2074,7 @@ const MemoryAlbum = () => {
                         </span>
                     ) : (<>
                         <Btn tone="quiet" onClick={prev} disabled={busy} aria-label="Previous page">‹ Back</Btn>
-                        <span className="font-mono text-xs sm:text-[13px] text-muted min-w-[92px] text-center" aria-live="polite">{spread}</span>
+                        <span className="font-mono text-xs sm:text-[0.8125rem] text-muted min-w-[5.75rem] text-center" aria-live="polite">{spread}</span>
                         <span className="relative">
                             <Btn tone="copper" onClick={atEnd ? close : next} disabled={busy} aria-label={atEnd ? 'Close the album' : 'Next page'}>{atEnd ? 'Close ✕' : 'Next ›'}</Btn>
                             <Hint show={flipped === 1 && !done && !busy} side="bottom" text="Turn the pages" />
@@ -2114,7 +2136,7 @@ const FistBump = () => {
                     <span className={`absolute bottom-0 font-mono text-xs text-neon transition-opacity ${together ? 'opacity-0' : 'opacity-100'}`} style={{ left: '4%' }}>Kishore</span>
                     <span className={`absolute bottom-0 font-mono text-xs text-[#FF5FA2] transition-opacity ${together ? 'opacity-0' : 'opacity-100'}`} style={{ right: '4%' }}>Aishu</span>
                 </div>
-                <div className="mt-8 min-h-[120px] flex flex-col items-center text-center" aria-live="polite">
+                <div className="mt-8 min-h-[7.5rem] flex flex-col items-center text-center" aria-live="polite">
                     {phase === 'done' && (
                         <div className="probe-in">
                             <p className="font-serif italic text-3xl sm:text-4xl text-ink leading-tight">Since our engineering days. Some things never change.&nbsp;👊</p>
@@ -2140,7 +2162,7 @@ const FistBump = () => {
 const CANDLES_X = [156, 200, 244];
 
 const Cake = ({ lit, onSnuff, active, party }) => (
-    <svg viewBox="0 0 400 350" className="w-full max-w-[420px] h-auto mx-auto block" role="group" aria-label="Circuit cake">
+    <svg viewBox="0 0 400 350" className="w-full max-w-[26.25rem] h-auto mx-auto block" role="group" aria-label="Circuit cake">
         <defs>
             <radialGradient id="flameGlow"><stop offset="0" stopColor="#FFD27A" stopOpacity=".95" /><stop offset=".35" stopColor="#F59E0B" stopOpacity=".45" /><stop offset="1" stopColor="#F59E0B" stopOpacity="0" /></radialGradient>
             <linearGradient id="resBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#e8d9b5" /><stop offset="1" stopColor="#bda77a" /></linearGradient>
@@ -2245,7 +2267,7 @@ const PowerDown = () => {
                     Throw the main breaker. Something's waiting on the bench, and it only shows up in the dark.
                 </SectionHead>
 
-                <div className="grid md:grid-cols-[180px_1fr] gap-6 items-stretch">
+                <div className="grid md:grid-cols-[11.25rem_1fr] gap-6 items-stretch">
                     {/* breaker */}
                     <div data-card3d className="z-10 rounded-[14px] border border-edge bg-panel p-5 flex md:flex-col items-center gap-5 md:gap-4 md:self-start">
                         <button role="switch" aria-checked={powered} aria-label="Main breaker" onClick={flip}
@@ -2261,15 +2283,15 @@ const PowerDown = () => {
                             <div className="flex md:justify-center items-center gap-2 text-ink font-medium">
                                 <Led on color={powered ? '#10B981' : '#ef4444'} />{powered ? 'Power on' : 'Power off'}
                             </div>
-                            <div className="font-mono text-[11px] text-dim mt-1">Main, {CFG.age} A</div>
-                            <p className="text-[13px] text-muted mt-2 leading-snug">
+                            <div className="font-mono text-[0.6875rem] text-dim mt-1">Main, {CFG.age} A</div>
+                            <p className="text-[0.8125rem] text-muted mt-2 leading-snug">
                                 {mode === 'on' ? 'Tap the switch to cut the mains.' : mode === 'dark' ? 'Tap again to bring the lights back.' : 'Power restored.'}
                             </p>
                         </div>
                     </div>
 
                     {/* stage */}
-                    <div data-card3d ref={stageRef} className={`relative rounded-[14px] border overflow-hidden min-h-[400px] flex flex-col items-center justify-center px-5 py-8 transition-colors duration-700
+                    <div data-card3d ref={stageRef} className={`relative rounded-[14px] border overflow-hidden min-h-[25rem] flex flex-col items-center justify-center px-5 py-8 transition-colors duration-700
                                     ${mode === 'dark' ? 'border-amber/20 bg-[#05070b]' : 'border-edge bg-panel'}`}>
                         {mode === 'party' && (
                             <div className="absolute inset-0 grid place-items-center pointer-events-none" aria-hidden="true">
@@ -2280,14 +2302,14 @@ const PowerDown = () => {
                         )}
 
                         <div className={`relative w-full transition-opacity duration-700 ${mode === 'on' ? 'opacity-[.07]' : 'opacity-100'}`}>
-                            <div className="relative max-w-[420px] mx-auto">
+                            <div className="relative max-w-[26.25rem] mx-auto">
                                 <Cake lit={lit} onSnuff={snuff} active={mode === 'dark'} party={mode === 'party'} />
                                 <Hint show={mode === 'dark' && lit.every(Boolean)} side="right" text="Click on these LEDs" style={{ left: '65%', top: '24.5%' }} className="-translate-y-1/2"
                                       textClass="whitespace-normal text-center w-[5.6em] rounded-2xl sm:w-auto sm:whitespace-nowrap sm:rounded-full" />
                             </div>
                         </div>
 
-                        <div className="relative mt-6 text-center min-h-[92px]" aria-live="polite">
+                        <div className="relative mt-6 text-center min-h-[5.75rem]" aria-live="polite">
                             {mode === 'on' && <p className="text-muted">Nothing to see with the lights on.</p>}
                             {mode === 'dark' && (
                                 <>
@@ -2523,7 +2545,7 @@ const CURSOR_NAMES = { probe: 'Probe', trail: 'Current trail', solder: 'Solderin
 
 /* review helper: add ?pick to the address to switch pointer styles live */
 const CursorPicker = ({ mode, setMode }) => (
-    <div className="fixed bottom-4 left-4 z-[81] flex flex-wrap gap-1.5 p-1.5 rounded-xl border border-white/10 bg-[#161D2B]/90 backdrop-blur text-[12px]">
+    <div className="fixed bottom-4 left-4 z-[81] flex flex-wrap gap-1.5 p-1.5 rounded-xl border border-white/10 bg-[#161D2B]/90 backdrop-blur text-[0.75rem]">
         {Object.keys(CURSORS).map(k => (
             <button key={k} onClick={() => setMode(k)}
                     className={`px-2.5 py-1.5 rounded-lg ${mode === k ? 'bg-neon text-obsidian font-medium' : 'text-muted hover:text-ink'}`}>{CURSOR_NAMES[k]}</button>
@@ -2626,7 +2648,7 @@ const App = () => {
             <MemoryAlbum />
             <PowerDown />
             <FistBump />
-            <footer className="px-5 sm:px-8 py-14 max-w-6xl mx-auto border-t border-edge/60 flex flex-wrap justify-between gap-3 text-[13px] text-dim">
+            <footer className="px-5 sm:px-8 py-14 max-w-6xl mx-auto border-t border-edge/60 flex flex-wrap justify-between gap-3 text-[0.8125rem] text-dim">
                 <span>Made for {CFG.name} with love and low impedance.</span>
                 <span className="font-mono text-xs">KD-BDAY-PCB rev {CFG.age}.0</span>
             </footer>
