@@ -72,11 +72,47 @@
                 linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
             background-size: 20px 20px, 100px 100px, 100px 100px;
         }
+        /* --glow is set on scroll: the colour drifts from section to section */
         .bg-glow {
             background:
-                radial-gradient(60% 40% at 50% 0%, rgba(0,242,254,.07), transparent 70%),
-                radial-gradient(50% 50% at 50% 120%, rgba(212,175,55,.05), transparent 70%);
+                radial-gradient(60% 40% at 50% 0%, rgb(var(--glow, 0 242 254) / .085), transparent 70%),
+                radial-gradient(50% 50% at 50% 120%, rgb(var(--glow2, 212 175 55) / .06), transparent 70%);
         }
+
+        /* 3D grid floor: a tilted grid stretching to a horizon, sliding toward you as you scroll */
+        .floor { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; perspective: 34rem; perspective-origin: 50% 40%; }
+        .floor-tilt { position: absolute; left: -75%; right: -75%; top: 40%; height: 190vh; transform-origin: 50% 0; transform: rotateX(78deg); }
+        .floor-grid { position: absolute; left: 0; right: 0; top: -6rem; bottom: 0; will-change: transform;
+            background-image: linear-gradient(rgb(var(--glow, 0 242 254) / .3) 1.5px, transparent 1.5px), linear-gradient(90deg, rgb(var(--glow, 0 242 254) / .3) 1.5px, transparent 1.5px);
+            background-size: 6rem 6rem; background-position: 50% 0; }
+        .floor-fade { position: absolute; left: 0; right: 0; top: 40%; bottom: 0;
+            background: linear-gradient(#0B0F17 0%, rgba(11,15,23,.82) 18%, rgba(11,15,23,.45) 55%, rgba(11,15,23,.25) 100%); }
+        .floor-horizon { position: absolute; left: 0; right: 0; top: 40%; height: 1px; background: linear-gradient(90deg, transparent, rgb(var(--glow, 0 242 254) / .45), transparent);
+            box-shadow: 0 0 24px 3px rgb(var(--glow, 0 242 254) / .18); }
+
+        /* Floating parts: faint line-drawn components drifting far behind the page, in layers that scroll at different speeds */
+        .parts-layer { position: fixed; left: 0; top: 0; width: 100%; z-index: -2; pointer-events: none; will-change: transform; }
+        .parts-layer svg { position: absolute; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .parts-layer .drift { animation: partDrift var(--dur, 12s) ease-in-out infinite alternate; }
+        @keyframes partDrift { from { transform: translate(-6px, -8px) rotate(var(--r0, -8deg)); } to { transform: translate(6px, 8px) rotate(var(--r1, 8deg)); } }
+        @media (prefers-reduced-motion: reduce) { .parts-layer .drift { animation: none; } }
+
+        /* Living circuit: one long trace down the page that draws itself as you scroll */
+        .circuit { position: absolute; left: 0; top: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+        .circuit path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .circuit .c-base { stroke: #D4AF37; stroke-opacity: .07; stroke-width: 1.5; }
+        .circuit .c-halo { stroke: #D4AF37; stroke-opacity: .1; stroke-width: 7; }
+        .circuit .c-live { stroke: #D4AF37; stroke-opacity: .5; stroke-width: 1.6; }
+        .circuit .c-via circle { fill: #0B0F17; stroke: #D4AF37; stroke-opacity: .2; stroke-width: 1.5; transition: stroke-opacity .5s, fill .5s; }
+        .circuit .c-via path { stroke: #D4AF37; stroke-opacity: .1; stroke-width: 1.5; transition: stroke-opacity .5s; }
+        .circuit .c-via .c-pad { fill: #D4AF37; fill-opacity: .15; stroke: none; transition: fill-opacity .5s, fill .5s; }
+        .circuit .c-via.on circle { stroke-opacity: .9; fill: #2a2208; }
+        .circuit .c-via.on path { stroke-opacity: .5; }
+        .circuit .c-via.on .c-pad { fill: rgb(var(--tip, 0 242 254)); fill-opacity: .9; }
+        .circuit .c-tip { fill: rgb(var(--tip, 0 242 254)); }
+        .circuit .c-tip-glow { fill: rgb(var(--tip, 0 242 254)); opacity: .22; animation: tipPulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+        @keyframes tipPulse { 50% { transform: scale(1.7); opacity: .08; } }
+        @media (prefers-reduced-motion: reduce) { .circuit .c-tip-glow { animation: none; } }
 
         /* Oscilloscope graticule: 10 x 8 divisions + centre ticks */
         .graticule {
@@ -388,6 +424,7 @@ const CFG = {
     from:      "Aishu",           /* EDIT: who it's from                  */
     signature: "Aishu...",        /* EDIT: how the message is signed      */
     cursor:    "trail",           /* EDIT: mouse pointer style: trail | probe | solder | led */
+    background: "circuit",        /* EDIT: the scrolling background: circuit (line) | wave (signal line) | floor (3D grid floor) */
     /* EDIT: the memory album. Photos live in the memories/ folder; ar = photo width ÷ height */
     album: {
         title:    "Read-Only Memories",
@@ -2588,6 +2625,246 @@ const useSmoothScroll = () => useEffect(() => {
 /* ═════════════════════════════════════════════
    App
    ═════════════════════════════════════════════ */
+/* ═════════════════════════════════════════════
+   3D grid floor background: scrolling down the page moves you forward across it
+   ═════════════════════════════════════════════ */
+const GridFloor = () => {
+    const grid = useRef(null);
+    useEffect(() => {
+        if (REDUCED) return;
+        let raf = 0;
+        const frame = () => {
+            raf = 0;
+            const cell = parseFloat(getComputedStyle(document.documentElement).fontSize) * 6;
+            grid.current.style.transform = `translate3d(0, ${((scrollY * .55) % cell).toFixed(1)}px, 0)`;
+        };
+        const onScroll = () => { if (!raf) raf = requestAnimationFrame(frame); };
+        addEventListener('scroll', onScroll, { passive: true }); frame();
+        return () => { cancelAnimationFrame(raf); removeEventListener('scroll', onScroll); };
+    }, []);
+    return (
+        <div className="floor" aria-hidden="true">
+            <div className="floor-tilt"><div ref={grid} className="floor-grid" /></div>
+            <div className="floor-fade" />
+            <div className="floor-horizon" />
+        </div>
+    );
+};
+
+/* ═════════════════════════════════════════════
+   Floating parts background
+   Line-drawn resistors, chips, LEDs, capacitors, hearts and sparkles, very faint, in three layers.
+   Far ones are small and barely move; near ones are bigger and slide faster as you scroll.
+   ═════════════════════════════════════════════ */
+const PART_ICONS = [
+    { c: '#D4AF37', el: <><path d="M2 24 H12 M36 24 H46" /><rect x="12" y="17" width="24" height="14" rx="7" /><path d="M19 17 V31 M24 17 V31 M29 17 V31" /></> },               /* resistor */
+    { c: '#8391A7', el: <><rect x="13" y="12" width="22" height="24" rx="3" /><path d="M7 18 H13 M7 24 H13 M7 30 H13 M35 18 H41 M35 24 H41 M35 30 H41" /><circle cx="18" cy="17" r="1.2" /></> },   /* chip */
+    { c: '#00F2FE', el: <><path d="M16 28 V19 A8 8 0 0 1 32 19 V28 Z" /><path d="M13 28 H35 M20 28 V44 M28 28 V39" /></> },                                                /* LED */
+    { c: '#FF5FA2', el: <path d="M24 40 C10 30 6 23 6 17 C6 11 11 8 15.5 8 C19 8 22 10 24 13.5 C26 10 29 8 32.5 8 C37 8 42 11 42 17 C42 23 38 30 24 40 Z" /> },          /* heart */
+    { c: '#8391A7', el: <path d="M2 24 H20 M20 12 V36 M28 12 V36 M28 24 H46" /> },                                                                                          /* capacitor */
+    { c: '#D4AF37', el: <path d="M24 5 C26 17 31 22 43 24 C31 26 26 31 24 43 C22 31 17 26 5 24 C17 22 22 17 24 5 Z" /> },                                                   /* sparkle */
+];
+const PART_LAYERS = [
+    { speed: .1,  size: 1.5, op: .1,  gap: 300 },   /* far   */
+    { speed: .26, size: 2.4, op: .13, gap: 420 },   /* mid   */
+    { speed: .48, size: 3.6, op: .16, gap: 640 },   /* near  */
+];
+const prand = n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };   /* steady "random", same every load */
+
+const FloatingParts = () => {
+    const refs = useRef([]);
+    const [dims, setDims] = useState(null);
+    const small = innerWidth < 640;
+
+    useEffect(() => {
+        let raf = 0, mraf = 0;
+        const measure = () => {
+            mraf = 0;
+            const max = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+            setDims(d => (d && d.max === max && d.vh === innerHeight && d.vw === innerWidth) ? d : { max, vh: innerHeight, vw: innerWidth });
+        };
+        const frame = () => { raf = 0; if (REDUCED) return; refs.current.forEach((el, i) => el && (el.style.transform = `translate3d(0, ${(-scrollY * PART_LAYERS[i].speed).toFixed(1)}px, 0)`)); };
+        const onScroll = () => { if (!raf) raf = requestAnimationFrame(frame); };
+        const remeasure = () => { if (!mraf) mraf = requestAnimationFrame(measure); };
+        const ro = new ResizeObserver(remeasure); ro.observe(document.getElementById('root'));
+        addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', remeasure);
+        measure(); frame();
+        return () => { cancelAnimationFrame(raf); cancelAnimationFrame(mraf); ro.disconnect(); removeEventListener('scroll', onScroll); removeEventListener('resize', remeasure); };
+    }, []);
+
+    if (!dims) return null;
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return PART_LAYERS.map((L, li) => {
+        if (small && li === 1) return <div key={li} ref={el => (refs.current[li] = el)} />;   /* phones: two layers are plenty */
+        const h = dims.vh + (REDUCED ? 0 : dims.max * L.speed), gap = L.gap * (small ? 1.25 : 1), n = Math.ceil(h / gap) * (small ? 1 : 2), px = L.size * rem;
+        return (
+            <div key={li} ref={el => (refs.current[li] = el)} className="parts-layer" aria-hidden="true" style={{ height: h, opacity: L.op }}>
+                {Array.from({ length: n }, (_, i) => {
+                    const k = li * 1000 + i, icon = PART_ICONS[Math.floor(prand(k) * PART_ICONS.length)];
+                    /* two loose columns on wide screens, so parts spread across both sides */
+                    const col = small ? prand(k + .3) : (i % 2 ? .5 : 0) + prand(k + .3) * .5;
+                    const y = Math.floor(i / (small ? 1 : 2)) * gap + prand(k + .6) * gap * .8;
+                    const rot = (prand(k + .9) - .5) * 70;
+                    return (
+                        <svg key={i} viewBox="0 0 48 48" width={px} height={px} className={small ? '' : 'drift'}
+                             style={{ left: `calc(${(col * 100).toFixed(2)}% - ${px / 2}px)`, top: y, color: icon.c,
+                                      transform: `rotate(${rot.toFixed(0)}deg)`, '--r0': `${(rot - 7).toFixed(0)}deg`, '--r1': `${(rot + 7).toFixed(0)}deg`,
+                                      '--dur': `${(9 + prand(k + .2) * 8).toFixed(1)}s`, animationDelay: `${(-prand(k + .4) * 12).toFixed(1)}s` }}>
+                            {icon.el}
+                        </svg>
+                    );
+                })}
+            </div>
+        );
+    });
+};
+
+/* ═════════════════════════════════════════════
+   Living circuit background
+   One PCB trace runs down the whole page in the side gutters, crossing over between sections.
+   It draws itself as you scroll, a pulse of current rides its tip, and each section's via lights
+   up as the current reaches it. The page glow also drifts through a colour per section.
+   ═════════════════════════════════════════════ */
+const SECTION_GLOW = [[0, 242, 254], [0, 242, 254], [16, 185, 129], [255, 95, 162], [245, 158, 11], [212, 175, 55], [110, 120, 150], [255, 95, 162]];
+
+const CircuitBg = ({ mode = 'circuit' }) => {
+    const svg = useRef(null), live = useRef(null), halo = useRef(null), tip = useRef(null), vias = useRef([]);
+    const [geo, setGeo] = useState(null);
+    const G = useRef(null);
+
+    useEffect(() => {
+        const main = svg.current.parentElement, glowEl = document.querySelector('.bg-glow');
+        let raf = 0, mraf = 0, drawn = 0;
+
+        const measure = () => {
+            mraf = 0;
+            const mr = main.getBoundingClientRect(), W = main.clientWidth, H = main.offsetHeight;   /* the content's own height, not counting this svg */
+            const secs = [...main.querySelectorAll(':scope > section')];
+            if (secs.length < 3) return;
+            const box = secs.map(el => {
+                const r = el.getBoundingClientRect(), h = el.querySelector('h1, h2')?.getBoundingClientRect();
+                return { top: r.top - mr.top, bottom: r.bottom - mr.top, left: r.left - mr.left, head: h ? h.top + h.height / 2 - mr.top : r.top - mr.top + 120 };
+            });
+            const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+            const xL = Math.max(10, box[1].left - rem * 1.5), xR = W - xL, cx = W / 2, b = Math.min(24, (xR - xL) / 6);
+            const room = box[1].left + rem * 2 - xL;   /* space between the trace and the content, for the little stubs */
+
+            const pts = [], nodes = [];
+            const y0 = box[0].bottom - 130;
+            if (mode === 'wave') {
+                /* the signal: one long wave down the left margin. It starts as noise, clears into a clean
+                   sine, and settles into a heartbeat by the end, the same story the oscilloscope tells */
+                const yEnd = box[box.length - 1].bottom - 10, span = yEnd - y0;
+                const xc = Math.max(10, (box[1].left + rem * 2) / 2), amp = Math.max(5, Math.min(rem * 3, xc - 6));
+                const sm = (a, c, v) => { const t = Math.min(1, Math.max(0, (v - a) / (c - a))); return t * t * (3 - 2 * t); };
+                const wx = y => {
+                    const q = (y - y0) / span, d = y - y0;
+                    const noise = Math.sin(d / 7) * .45 + Math.sin(d / 2.9 + 1.3) * .3 + Math.sin(d / 17 + .5) * .35 + (prand(Math.round(d / 4)) - .5) * .5;
+                    const sine = Math.sin(d / (rem * 3.2));
+                    const beat = ecg((d / (rem * 17)) % 1) * 1.15;
+                    const toSine = sm(.14, .34, q), toBeat = sm(.62, .8, q);
+                    const v = (noise * (1 - toSine) + sine * toSine) * (1 - toBeat) + beat * toBeat;
+                    return xc + v * amp * sm(0, .02, q);
+                };
+                pts.push([cx, y0], [cx, y0 + 30], [cx - b, y0 + 30 + b], [xc + b, y0 + 30 + b], [xc, y0 + 30 + 2 * b]);
+                for (let y = y0 + 30 + 2 * b + 3; y < yEnd; y += 3) pts.push([wx(y), y]);
+                pts.push([xc, yEnd], [xc + b, yEnd + b], [cx - b, yEnd + b], [cx, yEnd + 2 * b], [cx, yEnd + 2 * b + 14]);
+                for (let i = 1; i < box.length; i++) nodes.push({ x: wx(box[i].head), y: box[i].head, left: true, bare: true });
+            } else {
+            /* the trace: out of the present, down the left gutter, then swapping sides between sections */
+            pts.push([cx, y0], [cx, y0 + 30], [cx - b, y0 + 30 + b], [xL + b, y0 + 30 + b], [xL, y0 + 30 + 2 * b]);
+            let x = xL, left = true;
+            for (let i = 1; i < box.length; i++) {
+                nodes.push({ x, y: box[i].head, left });
+                const last = i === box.length - 1, yc = last ? box[i].bottom - 10 : box[i].bottom;
+                const nx = last ? cx : left ? xR : xL, d = nx > x ? 1 : -1;
+                pts.push([x, yc - b], [x + d * b, yc], [nx - d * b, yc], [nx, yc + b]);
+                if (last) pts.push([cx, yc + b + 14]);
+                x = nx; left = !left;
+            }
+            }
+            /* running length at every corner, so a y position can be turned into "how much is drawn" */
+            const len = [0];
+            for (let i = 1; i < pts.length; i++) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+                const at = y => { for (let i = 1; i < pts.length; i++) if (pts[i][1] >= y && pts[i][1] > pts[i - 1][1]) return len[i - 1] + (len[i] - len[i - 1]) * Math.max(0, (y - pts[i - 1][1]) / (pts[i][1] - pts[i - 1][1])); return len[len.length - 1]; };
+            nodes.forEach(n => { n.len = at(n.y); });
+            const g = { W, H, pts, len, L: len[len.length - 1], nodes, at, stub: room > 22 ? Math.min(30, room - 10) : 0, end: pts[pts.length - 1],
+                        mid: box.map(s => (s.top + s.bottom) / 2), d: 'M' + pts.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') };
+            G.current = g; setGeo(g); tick();
+        };
+
+        const pointAt = (g, l) => {
+            for (let i = 1; i < g.pts.length; i++) if (g.len[i] >= l) {
+                const t = (l - g.len[i - 1]) / (g.len[i] - g.len[i - 1] || 1);
+                return [g.pts[i - 1][0] + (g.pts[i][0] - g.pts[i - 1][0]) * t, g.pts[i - 1][1] + (g.pts[i][1] - g.pts[i - 1][1]) * t];
+            }
+            return g.end;
+        };
+
+        const frame = () => {
+            raf = 0;
+            const g = G.current; if (!g || !live.current) return;
+            const top = -main.getBoundingClientRect().top, max = Math.max(1, g.H - innerHeight);
+            /* the current reaches a little past the middle of the screen, and all the way by the end of the page */
+            const want = g.at(top + innerHeight * (.58 + .42 * Math.min(1, Math.max(0, top / max))));
+            drawn = REDUCED ? want : drawn + (want - drawn) * .14;
+            if (Math.abs(want - drawn) < .6) drawn = want;
+            const off = Math.max(0, g.L - drawn);
+            live.current.style.strokeDashoffset = off; halo.current.style.strokeDashoffset = off;
+            const [tx, ty] = pointAt(g, drawn);
+            tip.current.setAttribute('transform', `translate(${tx.toFixed(1)} ${ty.toFixed(1)})`);
+            tip.current.style.opacity = drawn > 2 && drawn < g.L - 1 ? 1 : 0;
+            g.nodes.forEach((n, i) => vias.current[i]?.classList.toggle('on', drawn >= n.len));
+            vias.current[g.nodes.length]?.classList.toggle('on', drawn >= g.L - 1);
+
+            /* colour journey: blend between the colours of the two sections nearest the middle of the screen */
+            const c = top + innerHeight / 2; let i = 0;
+            while (i < g.mid.length - 2 && g.mid[i + 1] < c) i++;
+            const t = Math.min(1, Math.max(0, (c - g.mid[i]) / (g.mid[i + 1] - g.mid[i] || 1))), e = t * t * (3 - 2 * t);
+            const A = SECTION_GLOW[i % SECTION_GLOW.length], B = SECTION_GLOW[(i + 1) % SECTION_GLOW.length];
+            const rgb = A.map((v, k) => Math.round(v + (B[k] - v) * e)).join(' ');
+            document.documentElement.style.setProperty('--glow', rgb); svg.current.style.setProperty('--tip', rgb);
+
+            if (drawn !== want) tick();
+        };
+        const tick = () => { if (!raf) raf = requestAnimationFrame(frame); };
+        const remeasure = () => { if (!mraf) mraf = requestAnimationFrame(measure); };
+
+        const ro = new ResizeObserver(remeasure); ro.observe(main);
+        addEventListener('scroll', tick, { passive: true });
+        addEventListener('resize', remeasure);
+        measure();
+        return () => { cancelAnimationFrame(raf); cancelAnimationFrame(mraf); ro.disconnect(); removeEventListener('scroll', tick); removeEventListener('resize', remeasure); };
+    }, []);
+
+    return (
+        <svg ref={svg} className="circuit" aria-hidden="true" width={geo?.W || 0} height={geo?.H || 0} style={mode === 'floor' ? { visibility: 'hidden' } : undefined}>
+            {geo && (<>
+                <path className="c-base" d={geo.d} />
+                <path ref={halo} className="c-halo" d={geo.d} strokeDasharray={`${geo.L} ${geo.L}`} strokeDashoffset={geo.L} />
+                <path ref={live} className="c-live" d={geo.d} strokeDasharray={`${geo.L} ${geo.L}`} strokeDashoffset={geo.L} />
+                {geo.nodes.map((n, i) => (
+                    <g key={i} ref={el => (vias.current[i] = el)} className="c-via">
+                        {geo.stub > 0 && !n.bare && <>
+                            <path d={`M${n.x} ${n.y} h${(n.left ? 1 : -1) * geo.stub}`} />
+                            <rect className="c-pad" x={n.x + (n.left ? 1 : -1) * geo.stub - 3} y={n.y - 3} width="6" height="6" rx="1" />
+                        </>}
+                        <circle cx={n.x} cy={n.y} r={n.bare ? 3.5 : 4.5} />
+                    </g>
+                ))}
+                <g ref={el => (vias.current[geo.nodes.length] = el)} className="c-via">
+                    <circle cx={geo.end[0]} cy={geo.end[1] + 5} r="5" />
+                    <rect className="c-pad" x={geo.end[0] - 2} y={geo.end[1] + 3} width="4" height="4" rx="2" />
+                </g>
+                <g ref={tip} style={{ opacity: 0 }}>
+                    <circle className="c-tip-glow" r="11" />
+                    <circle className="c-tip" r="3" />
+                </g>
+            </>)}
+        </svg>
+    );
+};
+
 /* 3D cards: every [data-card3d] swings up into place when it scrolls in,
    and on a mouse it leans toward the pointer (flat again while pressing, so clicks stay exact) */
 const useCards3D = () => useEffect(() => {
@@ -2631,15 +2908,18 @@ const App = () => {
     const params = new URLSearchParams(location.search);
     const [cursorMode, setCursorMode] = useState(CURSORS[params.get('cursor')] ? params.get('cursor') : CFG.cursor);
     const Cursor = CURSORS[cursorMode] || ProbeCursor;
+    const bgMode = ['circuit', 'wave', 'floor'].includes(params.get('bg')) ? params.get('bg') : CFG.background;
     return (
     <>
         <Confetti />
         <SoundToggle />
         <Cursor key={cursorMode} />
         {params.has('pick') && FINE_POINTER && <CursorPicker mode={cursorMode} setMode={setCursorMode} />}
-        <div className="fixed inset-0 bg-board pointer-events-none" aria-hidden="true" />
+        <FloatingParts />
+        {bgMode === 'floor' ? <GridFloor /> : <div className="fixed inset-0 bg-board pointer-events-none" aria-hidden="true" />}
         <div className="fixed inset-0 bg-glow pointer-events-none" aria-hidden="true" />
         <main className="relative">
+            <CircuitBg key={bgMode} mode={bgMode} />
             <GiftIntro />
             <Hero />
             <Terminal />
