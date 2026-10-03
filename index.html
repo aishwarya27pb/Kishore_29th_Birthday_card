@@ -300,6 +300,13 @@
             background: radial-gradient(520px circle at var(--gx, 50%) var(--gy, 0%), rgba(255,255,255,.075), transparent 45%);
             opacity: 0; transition: opacity .5s; }
         [data-card3d][data-c3="tilt"]::after { opacity: 1; }
+        /* settled cards drop their 3D transform completely: phone browsers sometimes skip painting parts
+           of a card (like the terminal's Run button) while it stays on a 3D layer, until a refresh or scroll */
+        [data-card3d]:not([data-c3="pre"]):not([data-c3="tilt"]) { transform: none; }
+        /* touch screens never tilt, so the swing-in there is a flat slide-up, no 3D at all */
+        @media (hover: none), (pointer: coarse) {
+            [data-card3d][data-c3="pre"] { transform: translateY(60px); }
+        }
         @media (prefers-reduced-motion: reduce) { [data-card3d] { transform: none !important; opacity: 1 !important; } }
 
         /* 3D lettering for the intro: bubbly script, gold face on a bronze extruded edge, gently tilting in space */
@@ -2900,10 +2907,13 @@ const useCards3D = () => useEffect(() => {
         addEventListener('pointerup', () => { down = false; });
     };
     document.querySelectorAll('[data-card3d]').forEach(setup);
+    /* safety net: if the observer ever misses a card, reveal it as soon as it's on screen */
+    const sweep = () => document.querySelectorAll('[data-c3="pre"]').forEach(el => { if (el.getBoundingClientRect().top < innerHeight * .95) { el.dataset.c3 = ''; io.unobserve(el); } });
+    addEventListener('scroll', sweep, { passive: true });
     /* cards that appear later (probe readouts, the secret message) get it too */
     const mo = new MutationObserver(() => document.querySelectorAll('[data-card3d]:not([data-c3on])').forEach(setup));
     mo.observe(document.getElementById('root'), { childList: true, subtree: true });
-    return () => { io.disconnect(); mo.disconnect(); };
+    return () => { io.disconnect(); mo.disconnect(); removeEventListener('scroll', sweep); };
 }, []);
 
 const App = () => {
