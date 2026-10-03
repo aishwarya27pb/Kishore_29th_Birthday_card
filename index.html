@@ -112,7 +112,7 @@
         .circuit .c-tip { fill: rgb(var(--tip, 0 242 254)); }
         .circuit .c-tip-glow { fill: rgb(var(--tip, 0 242 254)); opacity: .22; animation: tipPulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
         @keyframes tipPulse { 50% { transform: scale(1.7); opacity: .08; } }
-        @media (prefers-reduced-motion: reduce) { .circuit .c-tip-glow { animation: none; } }
+        @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) { .circuit .c-tip-glow { animation: none; } }
 
         /* Oscilloscope graticule: 10 x 8 divisions + centre ticks */
         .graticule {
@@ -2745,7 +2745,7 @@ const CircuitBg = ({ mode = 'circuit' }) => {
 
     useEffect(() => {
         const main = svg.current.parentElement, glowEl = document.querySelector('.bg-glow');
-        let raf = 0, mraf = 0, drawn = 0;
+        let raf = 0, mraf = 0, drawn = 0, lastRgb = '', lastD = '';
 
         const measure = () => {
             mraf = 0;
@@ -2801,7 +2801,7 @@ const CircuitBg = ({ mode = 'circuit' }) => {
             nodes.forEach(n => { n.len = at(n.y); });
             const g = { W, H, pts, len, L: len[len.length - 1], nodes, at, stub: room > 22 ? Math.min(30, room - 10) : 0, end: pts[pts.length - 1],
                         mid: box.map(s => (s.top + s.bottom) / 2), d: 'M' + pts.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') };
-            G.current = g; setGeo(g); tick();
+            G.current = g; const key = g.d + '|' + W + '|' + H; if (key !== lastD) { lastD = key; setGeo(g); } tick();
         };
 
         const pointAt = (g, l) => {
@@ -2834,18 +2834,24 @@ const CircuitBg = ({ mode = 'circuit' }) => {
             const t = Math.min(1, Math.max(0, (c - g.mid[i]) / (g.mid[i + 1] - g.mid[i] || 1))), e = t * t * (3 - 2 * t);
             const A = SECTION_GLOW[i % SECTION_GLOW.length], B = SECTION_GLOW[(i + 1) % SECTION_GLOW.length];
             const rgb = A.map((v, k) => Math.round(v + (B[k] - v) * e)).join(' ');
-            document.documentElement.style.setProperty('--glow', rgb); svg.current.style.setProperty('--tip', rgb);
+            /* only the few elements that use it, and only when it changes: setting it on the whole page made phones restyle everything every frame */
+            if (rgb !== lastRgb) {
+                lastRgb = rgb;
+                glowEl?.style.setProperty('--glow', rgb); svg.current.style.setProperty('--tip', rgb);
+                document.querySelector('.floor')?.style.setProperty('--glow', rgb);
+            }
 
             if (drawn !== want) tick();
         };
         const tick = () => { if (!raf) raf = requestAnimationFrame(frame); };
-        const remeasure = () => { if (!mraf) mraf = requestAnimationFrame(measure); };
+        /* wait for the page to stop changing size (e.g. while the message types out) before rebuilding the trace */
+        const remeasure = () => { clearTimeout(mraf); mraf = setTimeout(measure, 250); };
 
         const ro = new ResizeObserver(remeasure); ro.observe(main);
         addEventListener('scroll', tick, { passive: true });
         addEventListener('resize', remeasure);
         measure();
-        return () => { cancelAnimationFrame(raf); cancelAnimationFrame(mraf); ro.disconnect(); removeEventListener('scroll', tick); removeEventListener('resize', remeasure); };
+        return () => { cancelAnimationFrame(raf); clearTimeout(mraf); ro.disconnect(); removeEventListener('scroll', tick); removeEventListener('resize', remeasure); };
     }, []);
 
     return (
@@ -2929,7 +2935,7 @@ const App = () => {
         <SoundToggle />
         <Cursor key={cursorMode} />
         {params.has('pick') && FINE_POINTER && <CursorPicker mode={cursorMode} setMode={setCursorMode} />}
-        <FloatingParts />
+        {FINE_POINTER && <FloatingParts />}   {/* phones skip it: its tall layers eat graphics memory and the phone stops drawing parts of the page */}
         {bgMode === 'floor' ? <GridFloor /> : <div className="fixed inset-0 bg-board pointer-events-none" aria-hidden="true" />}
         <div className="fixed inset-0 bg-glow pointer-events-none" aria-hidden="true" />
         <main className="relative">
